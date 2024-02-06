@@ -30,6 +30,7 @@ tasks {
         runCommand(listOf(
                 "apt-get update",
                 "apt-get install python3-pip python3-poetry python3-venv git libfreetype6-dev -y",
+                "apt-get install libnss3 libnspr4 libdrm2 libgbm1 libasound2 -y",
                 "git config --global --add safe.directory /app",
                 "useradd -m -u 1000 poetry-runner",
                 "mkdir -p /home/poetry-runner/.cache",
@@ -67,6 +68,7 @@ tasks {
                 "apt-get update",
                 "apt-get install pkg-config -y",
                 "apt-get install python3-pip python3-venv git libfreetype6-dev -y",
+                "apt-get install libnss3 libnspr4 libdrm2 libgbm1 libasound2 -y",
                 "pip install poetry",
                 "git config --global --add safe.directory /app",
                 "useradd -m -u 1000 poetry-runner",
