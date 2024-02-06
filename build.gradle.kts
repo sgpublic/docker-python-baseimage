@@ -11,12 +11,22 @@ group = "io.github.sgpublic"
 version = "20240130"
 
 tasks {
-    fun Dockerfile.applyPoetryRunnerDockerfile(target: String) {
+    val tag = "mhmzx/poetry-runner"
+
+    val dockerCreateBookwormDockerfile by creating(Dockerfile::class) {
+        doFirst {
+            delete(layout.buildDirectory.file("docker-bookworm"))
+            copy {
+                from("./src/main/docker/")
+                include("*.sh")
+                into(layout.buildDirectory.dir("docker-bookworm"))
+            }
+        }
         group = "docker"
-        destFile = layout.buildDirectory.file("docker/$target/Dockerfile")
-        from("debian:$target-$version-slim")
+        destFile = layout.buildDirectory.file("docker-bookworm/Dockerfile")
+        from("debian:bookworm-$version-slim")
         workingDir("/app")
-        copyFile("./src/main/docker/*.sh", "/")
+        copyFile("./*.sh", "/")
         runCommand(listOf(
                 "apt-get update",
                 "apt-get install python3-pip python3-poetry python3-venv git libfreetype6-dev -y",
@@ -29,30 +39,51 @@ tasks {
         volume("/app")
         entryPoint("bash", "/docker-entrypoint.sh")
     }
-
-    val tag = "mhmzx/poetry-runner"
-    fun DockerBuildImage.applyPoetryRunnerBuildDocker(target: String, dependsOn: Dockerfile) {
+    val dockerBuildBookwormImage by creating(DockerBuildImage::class) {
         group = "docker"
-        dependsOn(dependsOn)
-        inputDir = project.file("./")
-        dockerFile = dependsOn.destFile
-        images.add("$tag:$target-$version")
-        images.add("$tag:$target-latest")
+        dependsOn(dockerCreateBookwormDockerfile)
+        inputDir = layout.buildDirectory.dir("docker-bookworm")
+        dockerFile = dockerCreateBookwormDockerfile.destFile
+        images.add("$tag:bookworm-$version")
+        images.add("$tag:bookworm-latest")
         noCache = true
     }
 
-    val dockerCreateBookwormDockerfile by creating(Dockerfile::class) {
-        applyPoetryRunnerDockerfile("bookworm")
-    }
-    val dockerBuildBookwormImage by creating(DockerBuildImage::class) {
-        applyPoetryRunnerBuildDocker("bookworm", dockerCreateBookwormDockerfile)
-    }
-
     val dockerCreateBullseyeDockerfile by creating(Dockerfile::class) {
-        applyPoetryRunnerDockerfile("bullseye")
+        doFirst {
+            delete(layout.buildDirectory.file("docker-bullseye"))
+            copy {
+                from("./src/main/docker/")
+                include("*.sh")
+                into(layout.buildDirectory.file("docker-bullseye"))
+            }
+        }
+        group = "docker"
+        destFile = layout.buildDirectory.file("docker-bullseye/Dockerfile")
+        from("debian:bullseye-$version-slim")
+        workingDir("/app")
+        copyFile("./*.sh", "/")
+        runCommand(listOf(
+                "apt-get update",
+                "apt-get install python3-pip python3-venv git libfreetype6-dev -y",
+                "pip install poetry",
+                "git config --global --add safe.directory /app",
+                "useradd -m -u 1000 poetry-runner",
+                "mkdir -p /home/poetry-runner/.cache",
+                "chown -R poetry-runner:poetry-runner /home/poetry-runner/.cache",
+        ).joinToString(" &&\\\n "))
+        volume("/home/poetry-runner/.cache")
+        volume("/app")
+        entryPoint("bash", "/docker-entrypoint.sh")
     }
     val dockerBuildBullseyeImage by creating(DockerBuildImage::class) {
-        applyPoetryRunnerBuildDocker("bullseye", dockerCreateBullseyeDockerfile)
+        group = "docker"
+        dependsOn(dockerCreateBullseyeDockerfile)
+        inputDir = layout.buildDirectory.dir("docker-bullseye")
+        dockerFile = dockerCreateBullseyeDockerfile.destFile
+        images.add("$tag:bullseye-$version")
+        images.add("$tag:bullseye-latest")
+        noCache = true
     }
 
     val dockerBuildImage by creating {
