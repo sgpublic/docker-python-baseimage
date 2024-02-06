@@ -31,5 +31,9 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Build with Gradle
+        env:
+          PUBLISHING_DOCKER_USERNAME: ${{ secrets.PUBLISHING_DOCKER_USERNAME }}
+          PUBLISHING_DOCKER_PASSWORD: ${{ secrets.PUBLISHING_DOCKER_PASSWORD }}
+          PUBLISHING_GITHUB_TOKEN: ${{ secrets.PUBLISHING_GITHUB_TOKEN }}
         run: |
           bash ./gradlew dockerPushImageOfficial
