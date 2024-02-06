@@ -13,9 +13,10 @@ version = "20240130"
 tasks {
     fun Dockerfile.applyPoetryRunnerDockerfile(target: String) {
         group = "docker"
+        destFile = layout.buildDirectory.file("docker/dockerfile-$target")
         from("debian:$target-$version-slim")
         workingDir("/app")
-        copyFile("./*.sh", "/")
+        copyFile("./src/main/docker/*.sh", "/")
         runCommand(listOf(
                 "apt-get update",
                 "apt-get install python3-pip python3-poetry python3-venv git libfreetype6-dev -y",
@@ -33,7 +34,7 @@ tasks {
     fun DockerBuildImage.applyPoetryRunnerBuildDocker(target: String, dependsOn: Dockerfile) {
         group = "docker"
         dependsOn(dependsOn)
-        inputDir = project.file("./src/main/docker")
+        inputDir = project.file("./")
         dockerFile = dependsOn.destFile
         images.add("$tag:$target-$version")
         images.add("$tag:$target-latest")
