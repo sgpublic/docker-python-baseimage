@@ -20,7 +20,7 @@ tasks {
         runCommand(listOf(
                 "apt-get update",
                 "apt-get install python3-pip python3-poetry python3-venv git libfreetype6-dev -y",
-                "git config --global --add safe.directory",
+                "git config --global --add safe.directory /app",
                 "useradd -m -u 1000 poetry-runner",
                 "mkdir -p /home/poetry-runner/.cache",
                 "chown -R poetry-runner:poetry-runner /home/poetry-runner/.cache",
