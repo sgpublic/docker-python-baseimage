@@ -13,7 +13,7 @@ version = "20240130"
 tasks {
     fun Dockerfile.applyPoetryRunnerDockerfile(target: String) {
         group = "docker"
-        destFile = layout.buildDirectory.file("docker/dockerfile-$target")
+        destFile = layout.buildDirectory.file("docker/$target/Dockerfile")
         from("debian:$target-$version-slim")
         workingDir("/app")
         copyFile("./src/main/docker/*.sh", "/")
