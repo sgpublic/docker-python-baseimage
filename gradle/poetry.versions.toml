@@ -1,0 +1,11 @@
+[versions]
+docker = "9.4.0"
+release-github = "2.5.2"
+
+[libraries]
+
+[plugins]
+docker-api = { id = "com.bmuschko.docker-remote-api", version.ref = "docker" }
+release-github = { id = "com.github.breadmoirai.github-release", version.ref = "release-github" }
+
+[bundles]
