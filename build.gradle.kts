@@ -65,6 +65,7 @@ tasks {
         copyFile("./*.sh", "/")
         runCommand(listOf(
                 "apt-get update",
+                "apt-get install pkg-config -y",
                 "apt-get install python3-pip python3-venv git libfreetype6-dev -y",
                 "pip install poetry",
                 "git config --global --add safe.directory /app",
@@ -91,13 +92,23 @@ tasks {
         dependsOn(dockerBuildBookwormImage, dockerBuildBullseyeImage)
     }
 
-    val dockerPushImageOfficial by creating(DockerPushImage::class) {
+    val dockerPushBuildBookImageOfficial by creating(DockerPushImage::class) {
         group = "docker"
-        dependsOn(dockerBuildImage)
+        dependsOn(dockerBuildBookwormImage)
         images.add("$tag:bookworm-$version")
         images.add("$tag:bookworm-latest")
+    }
+
+    val dockerPushBullseyeImageOfficial by creating(DockerPushImage::class) {
+        group = "docker"
+        dependsOn(dockerBuildBullseyeImage)
         images.add("$tag:bullseye-$version")
         images.add("$tag:bullseye-latest")
+    }
+
+    val dockerPushImageOfficial by creating {
+        group = "docker"
+        dependsOn(dockerPushBuildBookImageOfficial, dockerPushBullseyeImageOfficial)
     }
 }
 
