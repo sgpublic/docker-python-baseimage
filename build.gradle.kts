@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "io.github.sgpublic"
-version = "20240211"
+version = "20240311"
 
 tasks {
     val tag = "mhmzx/poetry-runner"
@@ -29,7 +29,7 @@ tasks {
         copyFile("./*.sh", "/")
         runCommand(listOf(
                 "apt-get update",
-                "apt-get install python3-pip python3-poetry python3-venv git libfreetype6-dev -y",
+                "apt-get install python3-pip python3-poetry python3-venv git libfreetype6-dev python-tk -y",
                 "pip install pipx --break-system-packages",
                 "pipx run playwright install-deps",
                 "git config --global --add safe.directory /app",
@@ -68,7 +68,7 @@ tasks {
         runCommand(listOf(
                 "apt-get update",
                 "apt-get install pkg-config -y",
-                "apt-get install python3-pip python3-venv git libfreetype6-dev -y",
+                "apt-get install python3-pip python3-venv git libfreetype6-dev python-tk -y",
                 "pip install poetry pipx",
                 "pipx run playwright install-deps",
                 "git config --global --add safe.directory /app",
