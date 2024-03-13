@@ -29,7 +29,7 @@ tasks {
         copyFile("./*.sh", "/")
         runCommand(listOf(
                 "apt-get update",
-                "apt-get install python3-pip python3-poetry python3-venv git libfreetype6-dev python-tk -y",
+                "apt-get install python3-pip python3-poetry python3-venv git libfreetype6-dev python3-tk -y",
                 "pip install pipx --break-system-packages",
                 "pipx run playwright install-deps",
                 "git config --global --add safe.directory /app",
@@ -68,7 +68,7 @@ tasks {
         runCommand(listOf(
                 "apt-get update",
                 "apt-get install pkg-config -y",
-                "apt-get install python3-pip python3-venv git libfreetype6-dev python-tk -y",
+                "apt-get install python3-pip python3-venv git libfreetype6-dev python3-tk -y",
                 "pip install poetry pipx",
                 "pipx run playwright install-deps",
                 "git config --global --add safe.directory /app",
