@@ -75,7 +75,7 @@ tasks {
                 "usermod -aG plugdev poetry-runner",
                 "apt-get clean",
                 "pip cache purge",
-                "rm -rf /var/cache/* /home/poetry/.cache/*",
+                "rm -rf /var/cache/* /var/tmp/* /home/poetry-runner/.cache/*",
         ).joinToString(" &&\\\n "))
         volume("/home/poetry-runner/.cache")
         volume("/app")
@@ -132,7 +132,7 @@ tasks {
                 "echo \"export PATH=\\\$PATH:/bin/adb\" >> /etc/profile",
                 "apt-get clean",
                 "pip cache purge",
-                "rm -rf /var/cache/* /home/poetry/.cache/*",
+                "rm -rf /var/cache/* /var/tmp/* /home/poetry-runner/.cache/*",
         ).joinToString(" &&\\\n "))
         volume("/home/poetry-runner/.cache")
         volume("/app")
