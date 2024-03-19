@@ -6,7 +6,10 @@ if [ -e "/setup" ]; then
 fi
 
 su - poetry-runner <<EOF
-cd /app
+if [ -z "$APP_ROOT" ]; then
+  export APP_ROOT=/app
+fi
+cd "$APP_ROOT"
 if [ -e "./start" ]; then
 	/bin/bash ./start
 else
