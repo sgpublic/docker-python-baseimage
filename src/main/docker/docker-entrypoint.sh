@@ -1,7 +1,10 @@
 #!/bin/bash
 
-if [ -e "/setup" ]; then
-	. /setup-functions.sh
+if [ -e "./setup" ]; then
+  . /setup-functions.sh
+	bash ./setup
+elif [ -e "/setup" ]; then
+  . /setup-functions.sh
 	bash /setup
 fi
 
