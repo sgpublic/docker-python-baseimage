@@ -3,12 +3,13 @@ import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 
 plugins {
-    alias(backsql.plugins.docker.api)
-    alias(backsql.plugins.release.github)
+    alias(poetry.plugins.docker.api)
+    alias(poetry.plugins.release.github)
 }
 
 group = "io.github.sgpublic"
-version = "20240311"
+// https://hub.docker.com/_/debian/tags
+version = "20240612"
 
 tasks {
     val tag = "mhmzx/poetry-runner"
@@ -60,6 +61,8 @@ tasks {
                         "python3-poetry " +
                         "python3-venv " +
                         "git " +
+                        "sudo " +
+                        "ffmpeg " +
                         "libfreetype6-dev " +
                         "python3-tk " +
                         "android-sdk-platform-tools-common",
@@ -118,6 +121,8 @@ tasks {
                         "python3-pip " +
                         "python3-venv " +
                         "git " +
+                        "sudo " +
+                        "ffmpeg " +
                         "libfreetype6-dev " +
                         "python3-tk " +
                         "android-sdk-platform-tools-common",

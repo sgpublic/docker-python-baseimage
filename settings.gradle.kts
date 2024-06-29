@@ -16,7 +16,7 @@ dependencyResolutionManagement {
 
     // https://docs.gradle.org/current/userguide/platforms.html#sec:importing-catalog-from-file
     versionCatalogs {
-        val backsql by creating {
+        val poetry by creating {
             from(files(File(rootDir, "./gradle/poetry.versions.toml")))
         }
     }

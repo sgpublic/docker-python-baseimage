@@ -37,3 +37,4 @@ jobs:
           PUBLISHING_GITHUB_TOKEN: ${{ secrets.PUBLISHING_GITHUB_TOKEN }}
         run: |
           bash ./gradlew dockerPushImageOfficial
+          bash ./gradlew githubRelease

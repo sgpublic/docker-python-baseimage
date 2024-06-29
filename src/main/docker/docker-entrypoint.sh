@@ -5,11 +5,9 @@ if [ -e "/setup" ]; then
 	bash /setup
 fi
 
-su - poetry-runner <<EOF
 cd /app
 if [ -e "./start" ]; then
-	/bin/bash ./start
+  sudo -u poetry-runner bash -c ./start
 else
-	/bin/bash /start
+  sudo -u poetry-runner bash -c /start
 fi
-EOF
