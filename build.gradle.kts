@@ -9,7 +9,7 @@ plugins {
 
 group = "io.github.sgpublic"
 // https://hub.docker.com/_/debian/tags
-version = "20240612"
+version = "20240722"
 
 tasks {
     val tag = "mhmzx/poetry-runner"
@@ -50,36 +50,53 @@ tasks {
         }
         group = "docker"
         destFile = layout.buildDirectory.file("docker-bookworm/Dockerfile")
-        from("debian:bookworm-$version")
-        workingDir("/app")
-        copyFile("./*.sh", "/")
-        copyFile("./adb", "/bin/adb")
+        from(Dockerfile.From("debian:bookworm-$version").withStage("builder"))
+        environmentVariable(mapOf(
+            "POETRY_HOME" to "/usr/share/poetry",
+            "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
+            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
+        ))
         runCommand(listOf(
-                "apt-get update",
-                "apt-get install -y " +
-                        "python3-pip " +
-                        "python3-poetry " +
-                        "python3-venv " +
-                        "git " +
-                        "sudo " +
-                        "ffmpeg " +
-                        "libfreetype6-dev " +
-                        "python3-tk " +
-                        "android-sdk-platform-tools-common",
-                "[ ! -f /usr/bin/python ] && ln -s /usr/bin/python3 /usr/bin/python",
-                "pip install pipx --break-system-packages",
-                "pipx run playwright install-deps",
-                "git config --global --add safe.directory /app",
-                "useradd -m -u 1000 poetry-runner",
-                "mkdir -p /home/poetry-runner/.cache",
-                "chown -R poetry-runner:poetry-runner /home/poetry-runner/.cache",
-                "echo \"# adb\" >> /etc/profile",
-                "echo \"export PATH=\\\$PATH:/bin/adb\" >> /etc/profile",
-                "usermod -aG plugdev poetry-runner",
-                "apt-get clean",
-                "pip cache purge",
-                "rm -rf /var/cache/* /var/tmp/* /home/poetry-runner/.cache/*",
+            "apt-get update",
+            "apt-get install -y " +
+                    "python3-pip " +
+                    "python3-venv " +
+                    "git " +
+                    "sudo " +
+                    "ffmpeg " +
+                    "curl " +
+                    "libfreetype6-dev " +
+                    "python3-tk " +
+                    "android-sdk-platform-tools-common",
+            "[ ! -f /usr/bin/python ] && ln -s /usr/bin/python3 /usr/bin/python",
+            "curl -sSL https://install.python-poetry.org | python3 - || { cat /poetry-installer-error-*.log; exit 1; }",
+            "pip install playwright --break-system-packages",
+            "playwright install-deps",
+            "git config --global --add safe.directory /app",
+            "useradd -m -u 1000 poetry-runner",
+            "mkdir -p /home/poetry-runner/.cache",
+            "chown -R poetry-runner:poetry-runner /home/poetry-runner/.cache",
+            "echo \"# adb\" >> /etc/profile",
+            "echo \"export PATH=\\\$PATH:\\\$ADB_HOME\" >> /etc/profile",
+            "echo \"# poetry\" >> /etc/profile",
+            "echo \"export PATH=\\\$PATH:\\\$POETRY_HOME/bin\" >> /etc/profile",
+            "usermod -aG plugdev poetry-runner",
+            "apt-get clean",
+            "pip cache purge",
+            "rm -rf /home/poetry-runner/.cache/* /usr/share/fonts/*",
         ).joinToString(" &&\\\n "))
+
+        from(Dockerfile.From("debian:bookworm-$version"))
+        environmentVariable(mapOf(
+            "POETRY_HOME" to "/usr/share/poetry",
+            "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
+            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
+            "ADB_HOME" to "/usr/share/adb",
+        ))
+        copyFile(Dockerfile.CopyFile("/", "/").withStage("builder"))
+        copyFile("./*.sh", "/")
+        copyFile("./adb", "/usr/share/adb")
+        workingDir("/app")
         volume("/home/poetry-runner/.cache")
         volume("/app")
         entryPoint("bash", "/docker-entrypoint.sh")
@@ -110,11 +127,14 @@ tasks {
         }
         group = "docker"
         destFile = layout.buildDirectory.file("docker-bullseye/Dockerfile")
-        from("debian:bullseye-$version")
-        workingDir("/app")
-        copyFile("./*.sh", "/")
-        copyFile("./adb", "/bin/adb")
-        runCommand(listOf(
+        from(Dockerfile.From("debian:bullseye-$version").withStage("builder"))
+        environmentVariable(mapOf(
+            "POETRY_HOME" to "/usr/share/poetry",
+            "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
+            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
+        ))
+        runCommand(
+            listOf(
                 "apt-get update",
                 "apt-get install pkg-config -y",
                 "apt-get install -y " +
@@ -123,12 +143,14 @@ tasks {
                         "git " +
                         "sudo " +
                         "ffmpeg " +
+                        "curl " +
                         "libfreetype6-dev " +
                         "python3-tk " +
                         "android-sdk-platform-tools-common",
                 "[ ! -f /usr/bin/python ] && ln -s /usr/bin/python3 /usr/bin/python",
-                "pip install poetry pipx",
-                "pipx run playwright install-deps",
+                "curl -sSL https://install.python-poetry.org | python3 - || { cat /poetry-installer-error-*.log; exit 1; }",
+                "pip install playwright",
+                "playwright install-deps",
                 "git config --global --add safe.directory /app",
                 "useradd -m -u 1000 poetry-runner",
                 "mkdir -p /home/poetry-runner/.cache",
@@ -138,7 +160,20 @@ tasks {
                 "apt-get clean",
                 "pip cache purge",
                 "rm -rf /var/cache/* /var/tmp/* /home/poetry-runner/.cache/*",
-        ).joinToString(" &&\\\n "))
+            ).joinToString(" &&\\\n ")
+        )
+
+        from(Dockerfile.From("debian:bullseye-$version"))
+        environmentVariable(mapOf(
+            "POETRY_HOME" to "/usr/share/poetry",
+            "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
+            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
+            "ADB_HOME" to "/usr/share/adb",
+        ))
+        copyFile(Dockerfile.CopyFile("/", "/").withStage("builder"))
+        copyFile("./*.sh", "/")
+        copyFile("./adb", "/bin/adb")
+        workingDir("/app")
         volume("/home/poetry-runner/.cache")
         volume("/app")
         entryPoint("bash", "/docker-entrypoint.sh")
@@ -178,9 +213,9 @@ tasks {
     }
 }
 
-fun findEnv(name: String): String {
-    return findProperty(name)?.toString()?.takeIf { it.isNotBlank() }
-            ?: System.getenv(name.replace(".", "_").uppercase())
+fun findEnv(name: String) = provider {
+    findProperty(name)?.toString()?.takeIf { it.isNotBlank() }
+        ?: System.getenv(name.replace(".", "_").uppercase())
 }
 
 docker {
