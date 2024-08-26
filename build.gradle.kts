@@ -84,7 +84,7 @@ tasks {
             "mkdir -p /home/poetry-runner/.cache",
             "chown -R poetry-runner:poetry-runner /home/poetry-runner/.cache",
             "echo \"# adb\" >> /etc/profile",
-            "echo \"export PATH=\\\$PATH:\\\$ADB_HOME\" >> /etc/profile",
+            "echo \"export PATH=\\\$PATH:/usr/share/adb\" >> /etc/profile",
             "echo \"# poetry\" >> /etc/profile",
             "echo \"export PATH=\\\$PATH:\\\$POETRY_HOME/bin\" >> /etc/profile",
             "usermod -aG plugdev poetry-runner",
@@ -98,7 +98,6 @@ tasks {
             "POETRY_HOME" to "/usr/share/poetry",
             "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
             "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
-            "ADB_HOME" to "/usr/share/adb",
         ))
         copyFile(Dockerfile.CopyFile("/", "/").withStage("builder"))
         copyFile("./*.sh", "/")
@@ -155,7 +154,7 @@ tasks {
                 "mkdir -p /home/poetry-runner/.cache",
                 "chown -R poetry-runner:poetry-runner /home/poetry-runner/.cache",
                 "echo \"# adb\" >> /etc/profile",
-                "echo \"export PATH=\\\$PATH:/bin/adb\" >> /etc/profile",
+                "echo \"export PATH=\\\$PATH:/usr/share/adb\" >> /etc/profile",
                 "apt-get clean",
                 "pip cache purge",
                 "rm -rf /var/cache/* /var/tmp/* /home/poetry-runner/.cache/*",
@@ -167,11 +166,10 @@ tasks {
             "POETRY_HOME" to "/usr/share/poetry",
             "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
             "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
-            "ADB_HOME" to "/usr/share/adb",
         ))
         copyFile(Dockerfile.CopyFile("/", "/").withStage("builder"))
         copyFile("./*.sh", "/")
-        copyFile("./adb", "/bin/adb")
+        copyFile("./adb", "/usr/share/adb")
         workingDir("/app")
         volume("/home/poetry-runner/.cache")
         volume("/app")
@@ -222,25 +220,27 @@ tasks {
                 images.addAll(tags)
             }
 
-            dockerToken?.let { token ->
-                try {
-                    val connection = URL("https://hub.docker.com/v2/namespaces/$dockerNamespace/repositories/$dockerRepository/tags/$fullTag")
-                        .openConnection() as HttpURLConnection
-                    connection.requestMethod = "HEAD"
+            try {
+                val connection = URL("https://hub.docker.com/v2/namespaces/$dockerNamespace/repositories/$dockerRepository/tags/$fullTag")
+                    .openConnection() as HttpURLConnection
+                connection.requestMethod = "HEAD"
+                dockerToken?.let { token ->
                     connection.addRequestProperty("Authorization", "Bearer $token")
-
-                    if (connection.responseCode == 404) {
-                        logger.warn("tag \"$fullTag\" is absence, prepare for building tasks...")
-                        builds[info] = build
-                        pushs[info] = push
-                    } else {
-                        logger.info("tag \"$fullTag\" exist, skip.")
-                    }
-
-                    connection.disconnect()
-                } catch (e: Exception) {
-                    logger.error("Failed to check docker tag: $fullTag")
                 }
+
+                if (connection.responseCode == 404) {
+                    logger.warn("tag \"$fullTag\" is absence, prepare for building tasks...")
+                    builds[info] = build
+                    if (dockerToken != null) {
+                        pushs[info] = push
+                    }
+                } else {
+                    logger.info("tag \"$fullTag\" exist, skip.")
+                }
+
+                connection.disconnect()
+            } catch (e: Exception) {
+                logger.error("Failed to check docker tag: $fullTag")
             }
         }
     }
@@ -251,10 +251,12 @@ tasks {
             dependsOn(task)
         }
     }
-    val dockerPushAbsenceImage by creating {
-        group = "docker"
-        for ((_, task) in pushs) {
-            dependsOn(task)
+    if (dockerToken != null) {
+        val dockerPushAbsenceImage by creating {
+            group = "docker"
+            for ((_, task) in pushs) {
+                dependsOn(task)
+            }
         }
     }
 
