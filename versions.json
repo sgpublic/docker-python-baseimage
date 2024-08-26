@@ -1,0 +1,30 @@
+{
+  "versions": {
+    "3.12": {
+      "verName": "3.12.5",
+      "platforms": [
+        "bookworm",
+        "bullseye"
+      ]
+    },
+    "3.11": {
+      "verName": "3.11.9",
+      "platforms": [
+        "bookworm",
+        "bullseye"
+      ]
+    },
+    "3.10": {
+      "verName": "3.10.11",
+      "platforms": [
+        "bullseye"
+      ]
+    },
+    "3.9": {
+      "verName": "3.9.13",
+      "platforms": [
+        "bullseye"
+      ]
+    }
+  }
+}

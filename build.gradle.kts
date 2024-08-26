@@ -1,19 +1,24 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import io.github.sgpublic.GitCreateTag
+import io.github.sgpublic.PythonVersions
+import io.github.sgpublic.gradle.VersionGen
+import org.gradle.internal.extensions.stdlib.capitalized
+import java.net.HttpURLConnection
+import java.net.URL
 
 plugins {
     alias(poetry.plugins.docker.api)
     alias(poetry.plugins.release.github)
+    alias(poetry.plugins.buildsrc.utils)
 }
 
 group = "io.github.sgpublic"
-// https://hub.docker.com/_/debian/tags
-version = "20240722"
+val mVersion = "${VersionGen.COMMIT_COUNT_VERSION}"
+version = mVersion
 
 tasks {
-    val tag = "mhmzx/poetry-runner"
-
     val downloadLatestAdb by creating {
         val adbDir = layout.buildDirectory.dir("adb")
         doFirst {
@@ -50,7 +55,8 @@ tasks {
         }
         group = "docker"
         destFile = layout.buildDirectory.file("docker-bookworm/Dockerfile")
-        from(Dockerfile.From("debian:bookworm-$version").withStage("builder"))
+        arg("PYTHON_VERSION")
+        from(Dockerfile.From("python:\${PYTHON_VERSION}-bookworm").withStage("builder"))
         environmentVariable(mapOf(
             "POETRY_HOME" to "/usr/share/poetry",
             "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
@@ -61,6 +67,7 @@ tasks {
             "apt-get install -y " +
                     "python3-pip " +
                     "python3-venv " +
+                    "python3-wheel " +
                     "git " +
                     "sudo " +
                     "ffmpeg " +
@@ -86,7 +93,7 @@ tasks {
             "rm -rf /home/poetry-runner/.cache/* /usr/share/fonts/*",
         ).joinToString(" &&\\\n "))
 
-        from(Dockerfile.From("debian:bookworm-$version"))
+        from(Dockerfile.From("python:\${PYTHON_VERSION}-bookworm"))
         environmentVariable(mapOf(
             "POETRY_HOME" to "/usr/share/poetry",
             "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
@@ -100,15 +107,6 @@ tasks {
         volume("/home/poetry-runner/.cache")
         volume("/app")
         entryPoint("bash", "/docker-entrypoint.sh")
-    }
-    val dockerBuildBookwormImage by creating(DockerBuildImage::class) {
-        group = "docker"
-        dependsOn(dockerCreateBookwormDockerfile)
-        inputDir = layout.buildDirectory.dir("docker-bookworm")
-        dockerFile = dockerCreateBookwormDockerfile.destFile
-        images.add("$tag:bookworm-$version")
-        images.add("$tag:bookworm-latest")
-        noCache = true
     }
 
     val dockerCreateBullseyeDockerfile by creating(Dockerfile::class) {
@@ -127,7 +125,8 @@ tasks {
         }
         group = "docker"
         destFile = layout.buildDirectory.file("docker-bullseye/Dockerfile")
-        from(Dockerfile.From("debian:bullseye-$version").withStage("builder"))
+        arg("PYTHON_VERSION")
+        from(Dockerfile.From("python:\${PYTHON_VERSION}-bullseye").withStage("builder"))
         environmentVariable(mapOf(
             "POETRY_HOME" to "/usr/share/poetry",
             "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
@@ -149,7 +148,7 @@ tasks {
                         "android-sdk-platform-tools-common",
                 "[ ! -f /usr/bin/python ] && ln -s /usr/bin/python3 /usr/bin/python",
                 "curl -sSL https://install.python-poetry.org | python3 - || { cat /poetry-installer-error-*.log; exit 1; }",
-                "pip install playwright",
+                "pip install wheel playwright",
                 "playwright install-deps",
                 "git config --global --add safe.directory /app",
                 "useradd -m -u 1000 poetry-runner",
@@ -163,7 +162,7 @@ tasks {
             ).joinToString(" &&\\\n ")
         )
 
-        from(Dockerfile.From("debian:bullseye-$version"))
+        from(Dockerfile.From("python:\${PYTHON_VERSION}-bullseye"))
         environmentVariable(mapOf(
             "POETRY_HOME" to "/usr/share/poetry",
             "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
@@ -178,38 +177,87 @@ tasks {
         volume("/app")
         entryPoint("bash", "/docker-entrypoint.sh")
     }
-    val dockerBuildBullseyeImage by creating(DockerBuildImage::class) {
-        group = "docker"
-        dependsOn(dockerCreateBullseyeDockerfile)
-        inputDir = layout.buildDirectory.dir("docker-bullseye")
-        dockerFile = dockerCreateBullseyeDockerfile.destFile
-        images.add("$tag:bullseye-$version")
-        images.add("$tag:bullseye-latest")
-        noCache = true
+
+    val dockerNamespace = "mhmzx"
+    val dockerRepository = "poetry-runner"
+    val dockerTagHead = "$dockerNamespace/$dockerRepository"
+    val dockerToken = findEnv("publishing.docker.token").orNull
+
+    val builds = mutableMapOf<PythonVersions.VersionInfo, DockerBuildImage>()
+    val pushs = mutableMapOf<PythonVersions.VersionInfo, DockerPushImage>()
+    for ((version, info) in PythonVersions().versions) {
+        for (platform in info.platforms) {
+            val fullTag = "$dockerTagHead:${info.verName}-$platform-$mVersion"
+            val tags = listOf(
+                "$dockerTagHead:$version-$platform",
+                "$dockerTagHead:${info.verName}-$platform",
+                "$dockerTagHead:$version-$platform-$mVersion",
+                fullTag,
+            )
+            val build = create("dockerBuild${info.verName}${platform.name.capitalized()}Image", DockerBuildImage::class) {
+                group = "docker"
+                images.addAll(tags)
+                buildArgs = mapOf(
+                    "PYTHON_VERSION" to info.verName,
+                )
+                when (platform) {
+                    PythonVersions.Platform.bookworm -> {
+                        dependsOn(dockerCreateBookwormDockerfile)
+                        inputDir = layout.buildDirectory.dir("docker-bookworm")
+                        dockerFile = dockerCreateBookwormDockerfile.destFile
+                    }
+                    PythonVersions.Platform.bullseye -> {
+                        dependsOn(dockerCreateBullseyeDockerfile)
+                        inputDir = layout.buildDirectory.dir("docker-bullseye")
+                        dockerFile = dockerCreateBullseyeDockerfile.destFile
+                    }
+                }
+                noCache = true
+            }
+            val push = create("dockerPush${info.verName}${platform.name.capitalized()}Image", DockerPushImage::class) {
+                group = "docker"
+                dependsOn(build)
+                images.addAll(tags)
+            }
+
+            dockerToken?.let { token ->
+                try {
+                    val connection = URL("https://hub.docker.com/v2/namespaces/$dockerNamespace/repositories/$dockerRepository/tags/$fullTag")
+                        .openConnection() as HttpURLConnection
+                    connection.requestMethod = "HEAD"
+                    connection.addRequestProperty("Authorization", "Bearer $token")
+
+                    if (connection.responseCode == 404) {
+                        logger.warn("tag \"$fullTag\" is absence, prepare for building tasks...")
+                        builds[info] = build
+                        pushs[info] = push
+                    } else {
+                        logger.info("tag \"$fullTag\" exist, skip.")
+                    }
+
+                    connection.disconnect()
+                } catch (e: Exception) {
+                    logger.error("Failed to check docker tag: $fullTag")
+                }
+            }
+        }
     }
 
-    val dockerBuildImage by creating {
+    val dockerBuildAbsenceImage by creating {
         group = "docker"
-        dependsOn(dockerBuildBookwormImage, dockerBuildBullseyeImage)
+        for ((_, task) in builds) {
+            dependsOn(task)
+        }
+    }
+    val dockerPushAbsenceImage by creating {
+        group = "docker"
+        for ((_, task) in builds) {
+            dependsOn(task)
+        }
     }
 
-    val dockerPushBuildBookImageOfficial by creating(DockerPushImage::class) {
-        group = "docker"
-        dependsOn(dockerBuildBookwormImage)
-        images.add("$tag:bookworm-$version")
-        images.add("$tag:bookworm-latest")
-    }
-
-    val dockerPushBullseyeImageOfficial by creating(DockerPushImage::class) {
-        group = "docker"
-        dependsOn(dockerBuildBullseyeImage)
-        images.add("$tag:bullseye-$version")
-        images.add("$tag:bullseye-latest")
-    }
-
-    val dockerPushImageOfficial by creating {
-        group = "docker"
-        dependsOn(dockerPushBuildBookImageOfficial, dockerPushBullseyeImageOfficial)
+    val createGitTag by creating(GitCreateTag::class) {
+        tagName = "v$mVersion"
     }
 }
 
@@ -229,7 +277,7 @@ githubRelease {
     token(findEnv("publishing.github.token"))
     owner = "sgpublic"
     repo = "poetry-docker"
-    tagName = "$version"
-    releaseName = "$version"
+    tagName = "v$mVersion"
+    releaseName = "v$mVersion"
     overwrite = true
 }
