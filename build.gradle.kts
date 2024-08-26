@@ -182,7 +182,9 @@ tasks {
     val dockerRepository = "poetry-runner"
     val dockerTagHead = "$dockerNamespace/$dockerRepository"
     val dockerToken = findEnv("publishing.docker.token").orNull
-
+    if (dockerToken == null) {
+        logger.warn("no docker token provided!")
+    }
     val builds = mutableMapOf<PythonVersions.VersionInfo, DockerBuildImage>()
     val pushs = mutableMapOf<PythonVersions.VersionInfo, DockerPushImage>()
     for ((version, info) in PythonVersions().versions) {
@@ -251,7 +253,7 @@ tasks {
     }
     val dockerPushAbsenceImage by creating {
         group = "docker"
-        for ((_, task) in builds) {
+        for ((_, task) in pushs) {
             dependsOn(task)
         }
     }

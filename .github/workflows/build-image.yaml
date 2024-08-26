@@ -31,13 +31,14 @@ jobs:
           version: 17
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v3
 
       - name: Build with Gradle
         env:
           PUBLISHING_DOCKER_USERNAME: ${{ secrets.PUBLISHING_DOCKER_USERNAME }}
           PUBLISHING_DOCKER_PASSWORD: ${{ secrets.PUBLISHING_DOCKER_PASSWORD }}
+          PUBLISHING_DOCKER_TOKEN: ${{ secrets.PUBLISHING_DOCKER_TOKEN }}
           PUBLISHING_GITHUB_TOKEN: ${{ secrets.PUBLISHING_GITHUB_TOKEN }}
         run: |
-          bash ./gradlew dockerPushAbsenceImage
-          bash ./gradlew githubRelease
+          ./gradlew dockerPushAbsenceImage
+          ./gradlew githubRelease
