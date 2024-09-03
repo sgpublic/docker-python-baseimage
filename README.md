@@ -15,14 +15,15 @@
 + libfreetype6-dev
 + python3-tk
 + android-sdk-platform-tools-common
-+ poetry（安装目录：`/usr/share/poetry`，缓存目录：`/home/poetry-runner/.cache/poetry`）
-+ adb（安装目录：`/usr/share/adb`，已添加环境变量，可直接调用）
++ poetry（安装目录：`/opt/poetry`，缓存目录：`/home/poetry-runner/.cache/poetry`）
++ adb（安装目录：`/opt/adb`，已添加环境变量，可直接调用）
++ rustup（安装目录：`/opt/rustup`，已添加环境变量，可直接调用）
 
 镜像启动流程：
 
 + 容器内工作目录为 `/app`
-+ 以 `root:root` 身份执行初始化脚本 `setup.sh`，寻找优先级：`/app/setup.sh` -> `/setup.sh`，若未寻找到则跳过。
-+ 以 `poetry-runner:poetry-runner` 身份执行启动脚本 `start.sh`，寻找优先级：`/app/start.sh` -> `/start.sh`，若未寻找到则报错，无法启动镜像。
++ 以 `root:root` 身份执行初始化脚本 `setup.sh`，寻找优先级：`/setup.sh` -> `/app/setup.sh`，若未寻找到则跳过。
++ 以 `poetry-runner:poetry-runner` 身份执行启动脚本 `start.sh`，寻找优先级：`/start.sh` -> `/app/start.sh`，若未寻找到则报错，无法启动镜像。
 
 ## 食用方法
 

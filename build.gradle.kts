@@ -1,12 +1,12 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
-import io.github.sgpublic.GitCreateTag
-import io.github.sgpublic.PythonVersions
+import io.github.sgpublic.*
 import io.github.sgpublic.gradle.VersionGen
 import org.gradle.internal.extensions.stdlib.capitalized
 import java.net.HttpURLConnection
 import java.net.URL
+
 
 plugins {
     alias(poetry.plugins.docker.api)
@@ -22,89 +22,96 @@ tasks {
     val downloadLatestAdb by creating {
         val adbDir = layout.buildDirectory.dir("adb")
         doFirst {
-            if (adbDir.get().asFile.exists()) {
-                delete(adbDir)
+            if (!adbDir.get().asFile.exists()) {
+                mkdir(adbDir)
             }
-            mkdir(adbDir)
         }
         doLast {
-            exec {
-                workingDir(adbDir)
-                commandLine("wget", "https://dl.google.com/android/repository/platform-tools-latest-linux.zip")
-            }
-            exec {
-                workingDir(adbDir)
-                commandLine("unzip", "platform-tools-latest-linux.zip")
+            if (!File(adbDir.get().asFile, "platform-tools").exists()) {
+                exec {
+                    workingDir(adbDir)
+                    commandLine("wget", "https://dl.google.com/android/repository/platform-tools-latest-linux.zip")
+                }
+                exec {
+                    workingDir(adbDir)
+                    commandLine("unzip", "platform-tools-latest-linux.zip")
+                }
             }
         }
     }
 
+    val username = "poetry-runner"
     val dockerCreateBookwormDockerfile by creating(Dockerfile::class) {
         dependsOn(downloadLatestAdb)
         doFirst {
             delete(layout.buildDirectory.file("docker-bookworm"))
             copy {
-                from("./src/main/docker/")
-                include("*.sh")
-                into(layout.buildDirectory.dir("docker-bookworm"))
+                from("./src/main/docker")
+                into(layout.buildDirectory.dir("docker-bookworm/rootf"))
             }
             copy {
                 from(layout.buildDirectory.dir("adb/platform-tools"))
-                into(layout.buildDirectory.dir("docker-bookworm/adb"))
+                into(layout.buildDirectory.dir("docker-bookworm/rootf/opt/adb"))
             }
         }
         group = "docker"
         destFile = layout.buildDirectory.file("docker-bookworm/Dockerfile")
         arg("PYTHON_VERSION")
-        from(Dockerfile.From("python:\${PYTHON_VERSION}-bookworm").withStage("builder"))
-        environmentVariable(mapOf(
-            "POETRY_HOME" to "/usr/share/poetry",
-            "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
-            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
-        ))
-        runCommand(listOf(
-            "apt-get update",
-            "apt-get install -y " +
-                    "python3-pip " +
-                    "python3-venv " +
-                    "python3-wheel " +
-                    "git " +
-                    "sudo " +
-                    "ffmpeg " +
-                    "curl " +
-                    "libfreetype6-dev " +
-                    "python3-tk " +
-                    "android-sdk-platform-tools-common",
-            "[ ! -f /usr/bin/python ] && ln -s /usr/bin/python3 /usr/bin/python",
-            "curl -sSL https://install.python-poetry.org | python3 - || { cat /poetry-installer-error-*.log; exit 1; }",
-            "pip install playwright --break-system-packages",
-            "playwright install-deps",
-            "git config --global --add safe.directory /app",
-            "useradd -m -u 1000 poetry-runner",
-            "mkdir -p /home/poetry-runner/.cache",
-            "chown -R poetry-runner:poetry-runner /home/poetry-runner/.cache",
-            "echo \"# adb\" >> /etc/profile",
-            "echo \"export PATH=\\\$PATH:/usr/share/adb\" >> /etc/profile",
-            "echo \"# poetry\" >> /etc/profile",
-            "echo \"export PATH=\\\$PATH:\\\$POETRY_HOME/bin\" >> /etc/profile",
-            "usermod -aG plugdev poetry-runner",
-            "apt-get clean",
-            "pip cache purge",
-            "rm -rf /home/poetry-runner/.cache/* /usr/share/fonts/*",
-        ).joinToString(" &&\\\n "))
-
         from(Dockerfile.From("python:\${PYTHON_VERSION}-bookworm"))
-        environmentVariable(mapOf(
-            "POETRY_HOME" to "/usr/share/poetry",
-            "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
-            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
+        runCommand(command(
+            "apt-get update",
+            aptInstall(
+                "python3-pip",
+                "python3-venv",
+                "python3-wheel",
+                "git",
+                "sudo",
+                "ffmpeg",
+                "curl",
+                "libfreetype6-dev",
+                "python3-tk",
+                "android-sdk-platform-tools-common",
+            ),
         ))
-        copyFile(Dockerfile.CopyFile("/", "/").withStage("builder"))
-        copyFile("./*.sh", "/")
-        copyFile("./adb", "/usr/share/adb")
+        environmentVariable(mapOf(
+            "ADB_HOME" to "/opt/adb",
+            "POETRY_HOME" to "/opt/poetry",
+            "POETRY_CACHE_DIR" to "/home/$username/.cache/poetry",
+            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
+            "RUSTUP_HOME" to "/opt/rustup",
+            "CARGO_HOME" to "/opt/cargo",
+        ))
+        runCommand(command(
+            "curl -sSL https://install.python-poetry.org | python3 -",
+        ))
+        runCommand(command(
+            "pip install playwright --break-system-packages",
+        ))
+        runCommand(command(
+            "playwright install-deps",
+        ))
+        runCommand(command(
+            "git config --global --add safe.directory /app",
+            "useradd -m -u 1000 $username",
+            "mkdir -p /home/$username/.cache",
+            "chown -R $username:$username /home/$username/.cache",
+            "usermod -aG plugdev $username",
+        ))
+        runCommand(command(
+            "mkdir -p \$RUSTUP_HOME \$CARGO_HOME",
+            "chown $username:$username \$RUSTUP_HOME \$CARGO_HOME",
+        ))
+        user(username)
+        runCommand(command(
+            "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
+        ))
+        user("root")
+        copyFile("./rootf", "/")
         workingDir("/app")
-        volume("/home/poetry-runner/.cache")
-        volume("/app")
+        volume(
+            "/home/$username/.cache",
+            "/app"
+        )
         entryPoint("bash", "/docker-entrypoint.sh")
     }
 
@@ -113,66 +120,72 @@ tasks {
         doFirst {
             delete(layout.buildDirectory.file("docker-bullseye"))
             copy {
-                from("./src/main/docker/")
-                include("*.sh")
-                into(layout.buildDirectory.file("docker-bullseye"))
+                from("./src/main/docker")
+                into(layout.buildDirectory.dir("docker-bullseye/rootf"))
             }
             copy {
                 from(layout.buildDirectory.dir("adb/platform-tools"))
-                into(layout.buildDirectory.dir("docker-bullseye/adb"))
+                into(layout.buildDirectory.dir("docker-bullseye/rootf/opt/adb"))
             }
         }
         group = "docker"
         destFile = layout.buildDirectory.file("docker-bullseye/Dockerfile")
         arg("PYTHON_VERSION")
-        from(Dockerfile.From("python:\${PYTHON_VERSION}-bullseye").withStage("builder"))
-        environmentVariable(mapOf(
-            "POETRY_HOME" to "/usr/share/poetry",
-            "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
-            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
-        ))
-        runCommand(
-            listOf(
-                "apt-get update",
-                "apt-get install pkg-config -y",
-                "apt-get install -y " +
-                        "python3-pip " +
-                        "python3-venv " +
-                        "git " +
-                        "sudo " +
-                        "ffmpeg " +
-                        "curl " +
-                        "libfreetype6-dev " +
-                        "python3-tk " +
-                        "android-sdk-platform-tools-common",
-                "[ ! -f /usr/bin/python ] && ln -s /usr/bin/python3 /usr/bin/python",
-                "curl -sSL https://install.python-poetry.org | python3 - || { cat /poetry-installer-error-*.log; exit 1; }",
-                "pip install wheel playwright",
-                "playwright install-deps",
-                "git config --global --add safe.directory /app",
-                "useradd -m -u 1000 poetry-runner",
-                "mkdir -p /home/poetry-runner/.cache",
-                "chown -R poetry-runner:poetry-runner /home/poetry-runner/.cache",
-                "echo \"# adb\" >> /etc/profile",
-                "echo \"export PATH=\\\$PATH:/usr/share/adb\" >> /etc/profile",
-                "apt-get clean",
-                "pip cache purge",
-                "rm -rf /var/cache/* /var/tmp/* /home/poetry-runner/.cache/*",
-            ).joinToString(" &&\\\n ")
-        )
-
         from(Dockerfile.From("python:\${PYTHON_VERSION}-bullseye"))
-        environmentVariable(mapOf(
-            "POETRY_HOME" to "/usr/share/poetry",
-            "POETRY_CACHE_DIR" to "/home/poetry-runner/.cache/poetry",
-            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
+        runCommand(command(
+            "apt-get update",
+            aptInstall(
+                "pkg-config",
+                "python3-pip",
+                "python3-venv",
+                "git",
+                "sudo",
+                "ffmpeg",
+                "curl",
+                "libfreetype6-dev",
+                "python3-tk",
+                "android-sdk-platform-tools-common",
+            ),
         ))
-        copyFile(Dockerfile.CopyFile("/", "/").withStage("builder"))
-        copyFile("./*.sh", "/")
-        copyFile("./adb", "/usr/share/adb")
+        environmentVariable(mapOf(
+            "ADB_HOME" to "/opt/adb",
+            "POETRY_HOME" to "/opt/poetry",
+            "POETRY_CACHE_DIR" to "/home/$username/.cache/poetry",
+            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
+            "RUSTUP_HOME" to "/opt/rustup",
+            "CARGO_HOME" to "/opt/cargo",
+        ))
+        runCommand(command(
+            "curl -sSL https://install.python-poetry.org | python3 -",
+        ))
+        runCommand(command(
+            "pip install wheel playwright",
+        ))
+        runCommand(command(
+            "playwright install-deps",
+        ))
+        runCommand(command(
+            "git config --global --add safe.directory /app",
+            "useradd -m -u 1000 $username",
+            "mkdir -p /home/$username/.cache",
+            "chown -R $username:$username /home/$username/.cache",
+            "usermod -aG plugdev $username",
+        ))
+        runCommand(command(
+            "mkdir -p \$RUSTUP_HOME \$CARGO_HOME",
+            "chown $username:$username \$RUSTUP_HOME \$CARGO_HOME",
+        ))
+        user(username)
+        runCommand(command(
+            "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
+        ))
+        user("root")
+        copyFile("./rootf", "/")
         workingDir("/app")
-        volume("/home/poetry-runner/.cache")
-        volume("/app")
+        volume(
+            "/home/$username/.cache",
+            "/app"
+        )
         entryPoint("bash", "/docker-entrypoint.sh")
     }
 
@@ -183,8 +196,8 @@ tasks {
     if (dockerToken == null) {
         logger.warn("no docker token provided!")
     }
-    val builds = mutableMapOf<PythonVersions.VersionInfo, DockerBuildImage>()
-    val pushs = mutableMapOf<PythonVersions.VersionInfo, DockerPushImage>()
+    val builds = mutableSetOf<DockerBuildImage>()
+    val pushs = mutableSetOf<DockerPushImage>()
     for ((version, info) in PythonVersions().versions) {
         for (platform in info.platforms) {
             val fullTag = "$dockerTagHead:${info.verName}-$platform-$mVersion"
@@ -212,7 +225,6 @@ tasks {
                         dockerFile = dockerCreateBullseyeDockerfile.destFile
                     }
                 }
-                noCache = true
             }
             val push = create("dockerPush${info.verName}${platform.name.capitalized()}Image", DockerPushImage::class) {
                 group = "docker"
@@ -230,9 +242,9 @@ tasks {
 
                 if (connection.responseCode == 404) {
                     logger.warn("tag \"$fullTag\" is absence, prepare for building tasks...")
-                    builds[info] = build
+                    builds.add(build)
                     if (dockerToken != null) {
-                        pushs[info] = push
+                        pushs.add(push)
                     }
                 } else {
                     logger.info("tag \"$fullTag\" exist, skip.")
@@ -247,14 +259,14 @@ tasks {
 
     val dockerBuildAbsenceImage by creating {
         group = "docker"
-        for ((_, task) in builds) {
+        for (task in builds) {
             dependsOn(task)
         }
     }
     if (dockerToken != null) {
         val dockerPushAbsenceImage by creating {
             group = "docker"
-            for ((_, task) in pushs) {
+            for (task in pushs) {
                 dependsOn(task)
             }
         }

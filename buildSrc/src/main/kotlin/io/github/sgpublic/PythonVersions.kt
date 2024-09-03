@@ -3,8 +3,12 @@ package io.github.sgpublic
 import com.google.gson.Gson
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.platform.base.Platform
 import java.io.File
 
+
+
+typealias SinglePythonVersionInfo = Pair<String, PythonVersions.Platform>
 
 data class PythonVersions(
     val versions: Map<String, VersionInfo>
@@ -18,7 +22,8 @@ data class PythonVersions(
         val dir: String
     ) {
         bookworm("docker-bookworm"),
-        bullseye("docker-bullseye")
+        bullseye("docker-bullseye"),
+        ;
     }
 }
 
