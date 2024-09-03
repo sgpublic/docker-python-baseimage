@@ -8,16 +8,13 @@
 
 + python3-pip
 + python3-venv
++ python3-wheel
 + git
 + sudo
-+ ffmpeg
 + curl
 + libfreetype6-dev
-+ python3-tk
 + android-sdk-platform-tools-common
 + poetry（安装目录：`/opt/poetry`，缓存目录：`/home/poetry-runner/.cache/poetry`）
-+ adb（安装目录：`/opt/adb`，已添加环境变量，可直接调用）
-+ rustup（安装目录：`/opt/rustup`，已添加环境变量，可直接调用）
 
 镜像启动流程：
 

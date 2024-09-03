@@ -42,6 +42,13 @@ fun aptInstall(vararg pkg: String): String {
     return "apt-get install -y ${pkg.joinToString(" ")}"
 }
 
+fun pipInstall(vararg pkg: String): String {
+    return "pip install ${pkg.joinToString(" ")}"
+}
+fun pipInstallWithBreak(vararg pkg: String): String {
+    return "pip install ${pkg.joinToString(" ")} --break-system-packages"
+}
+
 fun rm(vararg file: String): String {
     return "rm -rf ${file.joinToString(" ")}"
 }
