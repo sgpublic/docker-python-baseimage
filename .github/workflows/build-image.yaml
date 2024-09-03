@@ -33,6 +33,7 @@ jobs:
           PUBLISHING_DOCKER_PASSWORD: ${{ secrets.PUBLISHING_DOCKER_PASSWORD }}
           PUBLISHING_DOCKER_TOKEN: ${{ secrets.PUBLISHING_DOCKER_TOKEN }}
           PUBLISHING_GITHUB_TOKEN: ${{ secrets.PUBLISHING_GITHUB_TOKEN }}
+          CI_ENV: 1
         run: |
           ./gradlew dockerPushAbsenceImage
           ./gradlew githubRelease

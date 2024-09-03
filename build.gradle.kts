@@ -230,6 +230,16 @@ tasks {
                 group = "docker"
                 dependsOn(build)
                 images.addAll(tags)
+
+                doLast {
+                    if (System.getenv("CI_ENV") != null) {
+                        exec {
+                            commandLine(
+                                "docker system prune -f"
+                            )
+                        }
+                    }
+                }
             }
 
             try {
