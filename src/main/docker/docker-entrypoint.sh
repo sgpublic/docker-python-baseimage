@@ -8,12 +8,8 @@ elif [ -e "./setup" ]; then
 	bash ./setup
 fi
 
-# adb
-export PATH=$PATH:$ADB_HOME
 # poetry
 export PATH=$PATH:$POETRY_HOME/bin
-# rust
-export PATH=$PATH:$CARGO_HOME/bin
 
 cd /app
 export HOME="/home/poetry-runner"

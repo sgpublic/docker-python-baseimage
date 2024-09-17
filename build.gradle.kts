@@ -39,6 +39,7 @@ tasks {
                 "sudo",
                 "curl",
                 "libfreetype6-dev",
+                "build-essential",
                 "android-sdk-platform-tools-common",
             ),
         ))
@@ -91,6 +92,7 @@ tasks {
                 "sudo",
                 "curl",
                 "libfreetype6-dev",
+                "build-essential",
                 "android-sdk-platform-tools-common",
             ),
         ))
