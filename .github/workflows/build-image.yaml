@@ -6,7 +6,7 @@ on:
       - v*
 
 jobs:
-  build-m:
+  build-image:
     runs-on: ubuntu-20.04
     strategy:
       max-parallel: 1

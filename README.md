@@ -9,6 +9,7 @@
 + git
 + sudo
 + curl
++ ffmpeg
 + libfreetype6-dev
 + android-sdk-platform-tools-common
 + poetry（安装目录：`/opt/poetry`，缓存目录：`/home/poetry-runner/.cache/poetry`）

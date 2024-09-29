@@ -39,6 +39,7 @@ tasks {
                 "curl",
                 "libfreetype6-dev",
                 "build-essential",
+                "ffmpeg",
                 "android-sdk-platform-tools-common",
             ),
         ))
