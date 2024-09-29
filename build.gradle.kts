@@ -4,8 +4,6 @@ import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 import io.github.sgpublic.*
 import io.github.sgpublic.gradle.VersionGen
 import org.gradle.internal.extensions.stdlib.capitalized
-import java.net.HttpURLConnection
-import java.net.URL
 
 
 plugins {
@@ -20,18 +18,19 @@ version = mVersion
 
 tasks {
     val username = "poetry-runner"
-    val dockerCreateBookwormDockerfile by creating(Dockerfile::class) {
+    val dockerCreatePoetryDockerfile by creating(Dockerfile::class) {
         doFirst {
-            delete(layout.buildDirectory.file("docker-bookworm"))
+            delete(layout.buildDirectory.file("poetry"))
             copy {
                 from("./src/main/docker")
-                into(layout.buildDirectory.dir("docker-bookworm/rootf"))
+                into(layout.buildDirectory.dir("poetry/rootf"))
             }
         }
         group = "docker"
-        destFile = layout.buildDirectory.file("docker-bookworm/Dockerfile")
+        destFile = layout.buildDirectory.file("poetry/Dockerfile")
         arg("PYTHON_VERSION")
-        from(Dockerfile.From("python:\${PYTHON_VERSION}-slim-bookworm"))
+        arg("DEBIAN_VERSION")
+        from(Dockerfile.From("python:\${PYTHON_VERSION}-slim-\${DEBIAN_VERSION}"))
         runCommand(command(
             "apt-get update",
             aptInstall(
@@ -39,6 +38,7 @@ tasks {
                 "sudo",
                 "curl",
                 "libfreetype6-dev",
+                "build-essential",
                 "android-sdk-platform-tools-common",
             ),
         ))
@@ -50,64 +50,6 @@ tasks {
         runCommand(command(
             "curl -sSL https://install.python-poetry.org | python3 -",
         ))
-//        runCommand(command(
-//            "pip install playwright --break-system-packages",
-//        ))
-//        runCommand(command(
-//            "playwright install-deps",
-//        ))
-        runCommand(command(
-            "git config --global --add safe.directory /app",
-            "useradd -m -u 1000 $username",
-            "mkdir -p /home/$username/.cache",
-            "chown -R $username:$username /home/$username/.cache",
-            "usermod -aG plugdev $username",
-        ))
-        copyFile("./rootf", "/")
-        workingDir("/app")
-        volume(
-            "/home/$username/.cache",
-            "/app"
-        )
-        entryPoint("bash", "/docker-entrypoint.sh")
-    }
-
-    val dockerCreateBullseyeDockerfile by creating(Dockerfile::class) {
-        doFirst {
-            delete(layout.buildDirectory.file("docker-bullseye"))
-            copy {
-                from("./src/main/docker")
-                into(layout.buildDirectory.dir("docker-bullseye/rootf"))
-            }
-        }
-        group = "docker"
-        destFile = layout.buildDirectory.file("docker-bullseye/Dockerfile")
-        arg("PYTHON_VERSION")
-        from(Dockerfile.From("python:\${PYTHON_VERSION}-slim-bullseye"))
-        runCommand(command(
-            "apt-get update",
-            aptInstall(
-                "git",
-                "sudo",
-                "curl",
-                "libfreetype6-dev",
-                "android-sdk-platform-tools-common",
-            ),
-        ))
-        environmentVariable(mapOf(
-            "POETRY_HOME" to "/opt/poetry",
-            "POETRY_CACHE_DIR" to "/home/$username/.cache/poetry",
-            "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
-        ))
-        runCommand(command(
-            "curl -sSL https://install.python-poetry.org | python3 -",
-        ))
-//        runCommand(command(
-//            "pip install wheel playwright",
-//        ))
-//        runCommand(command(
-//            "playwright install-deps",
-//        ))
         runCommand(command(
             "git config --global --add safe.directory /app",
             "useradd -m -u 1000 $username",
@@ -127,87 +69,95 @@ tasks {
     val dockerNamespace = "mhmzx"
     val dockerRepository = "poetry-runner"
     val dockerTagHead = "$dockerNamespace/$dockerRepository"
+    val dockerCreatePlaywrightDockerfile by creating(Dockerfile::class) {
+        group = "docker"
+        arg("PYTHON_VERSION")
+        arg("DEBIAN_VERSION")
+        arg("PROJECT_VERSION")
+        arg("__BREAK_SYSTEM_PACKAGE")
+        destFile = layout.buildDirectory.file("playwright/Dockerfile")
+        from(Dockerfile.From("$dockerTagHead:\${PYTHON_VERSION}-\${DEBIAN_VERSION}-\${PROJECT_VERSION}"))
+        runCommand(command(
+            pipInstall(
+                "playwright",
+                "\${__BREAK_SYSTEM_PACKAGE}"
+            ),
+            "playwright install-deps chromium",
+            "pip uninstall playwright -y",
+            "pip cache purge",
+        ))
+    }
+
     val dockerToken = findEnv("publishing.docker.token").orNull
     if (dockerToken == null) {
         logger.warn("no docker token provided!")
     }
-    val builds = mutableSetOf<DockerBuildImage>()
-    val pushs = mutableSetOf<DockerPushImage>()
     for ((version, info) in PythonVersions().versions) {
         for (platform in info.platforms) {
-            val fullTag = "$dockerTagHead:${info.verName}-$platform-$mVersion"
-            val tags = listOf(
+            val simplyVersion = version.replace(".", "")
+            val tagsPoetry = listOf(
                 "$dockerTagHead:$version-$platform",
                 "$dockerTagHead:${info.verName}-$platform",
-                fullTag,
+                "$dockerTagHead:${info.verName}-$platform-$mVersion",
             )
-            val build = create("dockerBuild${info.verName}${platform.name.capitalized()}Image", DockerBuildImage::class) {
+            val buildPoetry = create("dockerBuild${simplyVersion}${platform.name.capitalized()}PoetryImage", DockerBuildImage::class) {
                 group = "docker"
-                images.addAll(tags)
+                images.addAll(tagsPoetry)
                 buildArgs = mapOf(
                     "PYTHON_VERSION" to info.verName,
+                    "DEBIAN_VERSION" to "$platform",
                 )
-                when (platform) {
-                    PythonVersions.Platform.bookworm -> {
-                        dependsOn(dockerCreateBookwormDockerfile)
-                        inputDir = layout.buildDirectory.dir("docker-bookworm")
-                        dockerFile = dockerCreateBookwormDockerfile.destFile
-                    }
-                    PythonVersions.Platform.bullseye -> {
-                        dependsOn(dockerCreateBullseyeDockerfile)
-                        inputDir = layout.buildDirectory.dir("docker-bullseye")
-                        dockerFile = dockerCreateBullseyeDockerfile.destFile
-                    }
-                }
+                inputDir = layout.buildDirectory.dir("poetry")
+                dockerFile = dockerCreatePoetryDockerfile.destFile
+                dependsOn(dockerCreatePoetryDockerfile)
             }
-            val push = create("dockerPush${info.verName}${platform.name.capitalized()}Image", DockerPushImage::class) {
+            val pushPoetry = create("dockerPush${simplyVersion}${platform.name.capitalized()}PoetryImage", DockerPushImage::class) {
                 group = "docker"
-                dependsOn(build)
-                images.addAll(tags)
+                dependsOn(buildPoetry)
+                images.addAll(tagsPoetry)
             }
 
-            try {
-                val connection = URL("https://hub.docker.com/v2/namespaces/$dockerNamespace/repositories/$dockerRepository/tags/$fullTag")
-                    .openConnection() as HttpURLConnection
-                connection.requestMethod = "HEAD"
-                dockerToken?.let { token ->
-                    connection.addRequestProperty("Authorization", "Bearer $token")
-                }
-
-                if (connection.responseCode == 404) {
-                    logger.warn("tag \"$fullTag\" is absence, prepare for building tasks...")
-                    builds.add(build)
-                    if (dockerToken != null) {
-                        pushs.add(push)
-                    }
+            val tagsPlaywright = listOf(
+                "$dockerTagHead:$version-$platform-playwright",
+                "$dockerTagHead:${info.verName}-$platform-playwright",
+                "$dockerTagHead:${info.verName}-$platform-playwright-$mVersion"
+            )
+            val buildPlaywright = create("dockerBuild${simplyVersion}${platform.name.capitalized()}PlaywrightImage", DockerBuildImage::class) {
+                group = "docker"
+                images.addAll(tagsPlaywright)
+                dependsOn(dockerCreatePlaywrightDockerfile)
+                inputDir = layout.buildDirectory.dir("playwright")
+                dockerFile = dockerCreatePlaywrightDockerfile.destFile
+                buildArgs = mapOf(
+                    "PYTHON_VERSION" to info.verName,
+                    "DEBIAN_VERSION" to "$platform",
+                    "PROJECT_VERSION" to mVersion,
+                )
+                if (platform == PythonVersions.Platform.bullseye) {
+                    buildArgs.put("__BREAK_SYSTEM_PACKAGE", "")
                 } else {
-                    logger.info("tag \"$fullTag\" exist, skip.")
+                    buildArgs.put("__BREAK_SYSTEM_PACKAGE", "--break-system-package")
                 }
-
-                connection.disconnect()
-            } catch (e: Exception) {
-                logger.error("Failed to check docker tag: $fullTag")
             }
-        }
-    }
+            val pushPlaywright = create("dockerPush${simplyVersion}${platform.name.capitalized()}PlaywrightImage", DockerPushImage::class) {
+                group = "docker"
+                dependsOn(buildPlaywright)
+                images.addAll(tagsPlaywright)
+            }
 
-    val dockerBuildAbsenceImage by creating {
-        group = "docker"
-        for (task in builds) {
-            dependsOn(task)
-        }
-    }
-    if (dockerToken != null) {
-        val dockerPushAbsenceImage by creating {
-            group = "docker"
-            for (task in pushs) {
-                dependsOn(task)
+            if (dockerToken == null) {
+                pushPoetry.enabled = false
+                pushPlaywright.enabled = false
             }
         }
     }
 
     val createGitTag by creating(GitCreateTag::class) {
         tagName = "v$mVersion"
+    }
+
+    val clean by creating(Delete::class) {
+        delete(rootProject.file("build"))
     }
 }
 

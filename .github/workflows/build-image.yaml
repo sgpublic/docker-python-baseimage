@@ -6,9 +6,14 @@ on:
       - v*
 
 jobs:
-  build:
+  build-m:
     runs-on: ubuntu-20.04
-
+    strategy:
+      max-parallel: 1
+      matrix:
+        version: [38, 39, 310, 311, 312]
+        platform: [Bookworm, Bullseye]
+        flavor: [Poetry, Playwright]
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.7
@@ -16,17 +21,42 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: 'recursive'
           fetch-depth: 0
-
       - name: Setup JDK 17
         uses: oracle-actions/setup-java@v1
         with:
           website: oracle.com
           release: 17
           version: 17
-
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v3
+      - name: Build with Gradle
+        env:
+          PYTHON_VERSION: ${{ matrix.version }}
+          DEBIAN_VERSION: ${{ matrix.platform }}
+          FLAVOR: ${{ matrix.flavor }}
+          PUBLISHING_DOCKER_USERNAME: ${{ secrets.PUBLISHING_DOCKER_USERNAME }}
+          PUBLISHING_DOCKER_PASSWORD: ${{ secrets.PUBLISHING_DOCKER_PASSWORD }}
+          PUBLISHING_DOCKER_TOKEN: ${{ secrets.PUBLISHING_DOCKER_TOKEN }}
+        run: |
+          ./gradlew dockerPush${PYTHON_VERSION}${DEBIAN_VERSION}${FLAVOR}Image
 
+  release:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: 'recursive'
+          fetch-depth: 0
+      - name: Setup JDK 17
+        uses: oracle-actions/setup-java@v1
+        with:
+          website: oracle.com
+          release: 17
+          version: 17
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
       - name: Build with Gradle
         env:
           PUBLISHING_GITHUB_TOKEN: ${{ secrets.PUBLISHING_GITHUB_TOKEN }}

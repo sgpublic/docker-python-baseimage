@@ -6,15 +6,13 @@
 
 包含依赖：
 
-+ python3-pip
-+ python3-venv
-+ python3-wheel
 + git
 + sudo
 + curl
 + libfreetype6-dev
 + android-sdk-platform-tools-common
 + poetry（安装目录：`/opt/poetry`，缓存目录：`/home/poetry-runner/.cache/poetry`）
++ playwright deps for chromium（仅标签中包含 playwright 时）
 
 镜像启动流程：
 
