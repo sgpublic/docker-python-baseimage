@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 if [ -e "/setup" ]; then
   . /setup-functions.sh
 	bash /setup
@@ -8,17 +10,9 @@ elif [ -e "./setup" ]; then
 	bash ./setup
 fi
 
-# adb
-export PATH=$PATH:$ADB_HOME
-# poetry
-export PATH=$PATH:$POETRY_HOME/bin
-# rust
-export PATH=$PATH:$CARGO_HOME/bin
+if [[ -z "$APP_CACHE_HOME" ]]; then
+  export APP_CACHE_HOME=$XDG_CACHE_HOME/$AUTO_VENV_NAME
+fi
 
 cd /app
-export HOME="/home/poetry-runner"
-ENTRYPOINT=./start
-if [ -e "/start" ]; then
-  ENTRYPOINT=/start
-fi
-su --preserve-environment poetry-runner bash -c $ENTRYPOINT
+gosu $PUID:$PGID bash -c /runner-entrypoint.sh

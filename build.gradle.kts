@@ -17,7 +17,6 @@ val mVersion = "${VersionGen.COMMIT_COUNT_VERSION}"
 version = mVersion
 
 tasks {
-    val username = "poetry-runner"
     val dockerCreatePoetryDockerfile by creating(Dockerfile::class) {
         doFirst {
             delete(layout.buildDirectory.file("poetry"))
@@ -32,6 +31,7 @@ tasks {
         arg("DEBIAN_VERSION")
         from(Dockerfile.From("python:\${PYTHON_VERSION}-slim-\${DEBIAN_VERSION}"))
         runCommand(command(
+            replaceSourceListCommand(),
             "apt-get update",
             aptInstall(
                 "git",
@@ -40,12 +40,13 @@ tasks {
                 "libfreetype6-dev",
                 "build-essential",
                 "ffmpeg",
-                "android-sdk-platform-tools-common",
+                "gosu",
             ),
         ))
         environmentVariable(mapOf(
             "POETRY_HOME" to "/opt/poetry",
-            "POETRY_CACHE_DIR" to "/home/$username/.cache/poetry",
+            "POETRY_CACHE_DIR" to "/.cache/poetry",
+            "XDG_CACHE_HOME" to "/.cache",
             "PYTHON_KEYRING_BACKEND" to "keyring.backends.null.Keyring",
         ))
         runCommand(command(
@@ -53,17 +54,23 @@ tasks {
         ))
         runCommand(command(
             "git config --global --add safe.directory /app",
-            "useradd -m -u 1000 $username",
-            "mkdir -p /home/$username/.cache",
-            "chown -R $username:$username /home/$username/.cache",
-            "usermod -aG plugdev $username",
+            "mkdir -p /.cache/poetry",
         ))
         copyFile("./rootf", "/")
         workingDir("/app")
         volume(
-            "/home/$username/.cache",
+            "/.cache",
             "/app"
         )
+        environmentVariable(mapOf(
+            "PATH" to "\${PATH}:\${POETRY_HOME}/bin",
+            "PUID" to "1000",
+            "PGID" to "1000",
+            "AUTO_VENV" to "0",
+            "AUTO_VENV_NAME" to "poetry-runner",
+            "AUTO_PIP_INSTALL" to "0",
+            "REQUIREMENTS_TXT" to "/app/requirements.txt",
+        ))
         entryPoint("bash", "/docker-entrypoint.sh")
     }
 
