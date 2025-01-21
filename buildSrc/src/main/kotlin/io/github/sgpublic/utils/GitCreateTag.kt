@@ -1,8 +1,6 @@
-package io.github.sgpublic
+package io.github.sgpublic.utils
 
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.revwalk.RevCommitList
-import org.eclipse.jgit.revwalk.RevWalk
 import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input

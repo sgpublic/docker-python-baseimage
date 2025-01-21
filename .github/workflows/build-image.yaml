@@ -6,13 +6,13 @@ on:
       - v*
 
 jobs:
-  build-image:
+  build-poetry:
     runs-on: ubuntu-20.04
     strategy:
       max-parallel: 1
       matrix:
-        version: [38, 39, 310, 311, 312]
-        platform: [Bookworm, Bullseye]
+        version: [313, 312, 311, 310, 39] # python-versions
+        platform: [Bookworm, Bullseye, Buster] # debian-versions
         flavor: [Poetry, Playwright]
     steps:
       - name: Checkout
@@ -31,17 +31,18 @@ jobs:
         uses: gradle/gradle-build-action@v3
       - name: Build with Gradle
         env:
-          PYTHON_VERSION: ${{ matrix.version }}
-          DEBIAN_VERSION: ${{ matrix.platform }}
+          PYTHON_VERSION: ${{ matrix.python }}
+          DEBIAN_VERSION: ${{ matrix.debian }}
           FLAVOR: ${{ matrix.flavor }}
           PUBLISHING_DOCKER_USERNAME: ${{ secrets.PUBLISHING_DOCKER_USERNAME }}
           PUBLISHING_DOCKER_PASSWORD: ${{ secrets.PUBLISHING_DOCKER_PASSWORD }}
           PUBLISHING_DOCKER_TOKEN: ${{ secrets.PUBLISHING_DOCKER_TOKEN }}
         run: |
-          ./gradlew dockerPush${PYTHON_VERSION}${DEBIAN_VERSION}${FLAVOR}Image
+          ./scripts/ci_build.sh
 
   release:
     runs-on: ubuntu-20.04
+    needs: [build-poetry]
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.7
