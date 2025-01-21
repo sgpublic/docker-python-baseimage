@@ -81,3 +81,28 @@ services:
       TZ: Asia/Shanghai
       LANG: zh_CN.UTF8
 ```
+
+## 从源代码构建
+
+环境要求：
+
++ JDK 17
+
+以 Python 3.10、CUDA 11.4 举例。
+
+检查 [Python 版本合集](/versions/python.json) 中，目标 Python 版本支持哪些 Debian 系统版本，此处 Python 3.10 支持 `buster` 及以上，于是：
+
+```shell
+./gradlew buildPoetry310BusterImage # 构建仅 poetry 的 Debian 10 镜像
+./gradlew buildPlaywright310BusterImage # 构建带 poetry 和 playwright 的 Debian 10 镜像
+./gradlew buildPlaywright310BullseyeImage # 构建带 poetry 和 playwright 的 Debian 11 镜像
+./gradlew buildPlaywright310BookwormImage # 构建带 poetry 和 playwright 的 Debian 12 镜像
+# ...以此类推
+```
+
+检查 [CUDA 版本合集](/versions/cuda.json) 中，目标 CUDA 版本支持哪些 Debian 系统版本，此处 CUDA 11.4 仅支持 `buster`，于是：
+
+```shell
+./gradlew buildCuda114Poetry310BusterImage # 构建仅 poetry 的镜像
+./gradlew buildCuda114Playwright310BusterImage # 构建带 poetry 和 playwright 的镜像
+```
