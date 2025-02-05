@@ -9,7 +9,6 @@ jobs:
   build-poetry:
     runs-on: ubuntu-20.04
     strategy:
-      max-parallel: 1
       matrix:
         python: [313, 312, 311, 310, 39] # python-versions
         debian: [Bookworm, Bullseye, Buster] # debian-versions
