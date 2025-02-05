@@ -42,7 +42,7 @@ class DockerPlugin: Plugin<Project> {
                             "PYTHON_VERSION" to pyFullVer,
                             "DEBIAN_VERSION" to "$debianVer",
                     ))
-                    if (debianVer.numVer > DebianVersion.bullseye.numVer) {
+                    if (debianVer > DebianVersion.bullseye) {
                         buildArgs.put("__SOURCE_LIST_FILE", "/etc/apt/sources.list.d/debian.sources")
                     } else {
                         buildArgs.put("__SOURCE_LIST_FILE", "/etc/apt/sources.list")
@@ -61,7 +61,7 @@ class DockerPlugin: Plugin<Project> {
                     images.addAll(tagsPoetry)
                     upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, tagsPoetry.last())
                 }
-    
+
                 val tagsPlaywright = listOf(
                     "${DOCKER_TAG}:${pyMinorVer}-${debianVer}-playwright",
                     "${DOCKER_TAG}:${pyFullVer}-${debianVer}-playwright",
@@ -77,7 +77,7 @@ class DockerPlugin: Plugin<Project> {
                             "PYTHON_VERSION" to pyFullVer,
                             "DEBIAN_VERSION" to "$debianVer",
                     ))
-                    if (debianVer.numVer <= DebianVersion.bullseye.numVer) {
+                    if (debianVer <= DebianVersion.bullseye) {
                         buildArgs.put("__BREAK_SYSTEM_PACKAGE", "")
                     } else {
                         buildArgs.put("__BREAK_SYSTEM_PACKAGE", "--break-system-package")
@@ -97,8 +97,14 @@ class DockerPlugin: Plugin<Project> {
                     images.addAll(tagsPlaywright)
                     upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, tagsPlaywright.last())
                 }
-    
+
+                if (debianVer <= DebianVersion.buster) {
+                    // Buster 不受 PlayWright 官方支持
+                    buildPlaywright.get().enabled = false
+                    pushPlaywright.get().enabled = false
+                }
                 if (target.DOCKER_TOKEN == null) {
+                    // 未设置 Token 时不允许 push
                     pushPoetry.get().enabled = false
                     pushPlaywright.get().enabled = false
                 }

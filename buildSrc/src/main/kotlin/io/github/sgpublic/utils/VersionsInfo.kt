@@ -10,9 +10,9 @@ data class VersionsInfo(
 )
 
 enum class DebianVersion(val numVer: Int) {
-    bookworm(12),
-    bullseye(11),
     buster(10),
+    bullseye(11),
+    bookworm(12),
     ;
 }
 
