@@ -25,6 +25,7 @@
 + APP_CACHE_HOME：创建 venv 所在路径，默认 `$XDG_CACHE_HOME/$AUTO_VENV_NAME`。
 + AUTO_PIP_INSTALL：是否自动安装依赖，默认 `0`，当 `AUTO_VENV` 为 0 且 `/app/poetry.lock` 不存在时强制置为 `0`。
 + REQUIREMENTS_TXT：pip install 所使用的 requirements.txt 文件路径，默认 `/app/requirements.txt`。
++ APT_MIRROR/PIP_MIRROR：设置 apt、pip 镜像源，留空则不设置，默认为空。
 
 镜像启动流程：
 

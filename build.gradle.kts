@@ -21,6 +21,26 @@ tasks {
     val clean by creating(Delete::class) {
         delete(rootProject.file("build"))
     }
+
+    val ciBuild by creating ciBuild@{
+        group = "publishing"
+        val pyVer = findEnv("ci.build.python.version").orNull
+        val debVer = findEnv("ci.build.debian.version").orNull
+
+        if (pyVer == null || debVer == null) {
+            enabled = false
+            return@ciBuild
+        }
+
+        val poetryTask = getTasksByName("pushPoetry${pyVer}${debVer}Image", false)
+        if (poetryTask.any()) {
+            dependsOn(poetryTask.first())
+        }
+        val playwrightTask = getTasksByName("pushPlaywright${pyVer}${debVer}Image", false)
+        if (playwrightTask.any()) {
+            dependsOn(playwrightTask.first())
+        }
+    }
 }
 
 docker {

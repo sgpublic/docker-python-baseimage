@@ -11,14 +11,13 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        version: [313, 312, 311, 310, 39] # python-versions
-        platform: [Bookworm, Bullseye, Buster] # debian-versions
-        flavor: [Poetry, Playwright]
+        python: [313, 312, 311, 310, 39] # python-versions
+        debian: [Bookworm, Bullseye, Buster] # debian-versions
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PUBLISHING_GITHUB_TOKEN }}
           submodules: 'recursive'
           fetch-depth: 0
       - name: Setup JDK 17
@@ -31,14 +30,13 @@ jobs:
         uses: gradle/gradle-build-action@v3
       - name: Build with Gradle
         env:
-          PYTHON_VERSION: ${{ matrix.python }}
-          DEBIAN_VERSION: ${{ matrix.debian }}
-          FLAVOR: ${{ matrix.flavor }}
+          CI_BUILD_PYTHON_VERSION: ${{ matrix.python }}
+          CI_BUILD_DEBIAN_VERSION: ${{ matrix.debian }}
           PUBLISHING_DOCKER_USERNAME: ${{ secrets.PUBLISHING_DOCKER_USERNAME }}
           PUBLISHING_DOCKER_PASSWORD: ${{ secrets.PUBLISHING_DOCKER_PASSWORD }}
           PUBLISHING_DOCKER_TOKEN: ${{ secrets.PUBLISHING_DOCKER_TOKEN }}
         run: |
-          ./scripts/ci_build.sh
+          ./gradlew ciBuild
 
   release:
     runs-on: ubuntu-20.04
@@ -47,7 +45,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.1.7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PUBLISHING_GITHUB_TOKEN }}
           submodules: 'recursive'
           fetch-depth: 0
       - name: Setup JDK 17

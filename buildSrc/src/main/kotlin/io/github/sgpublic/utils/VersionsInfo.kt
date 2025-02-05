@@ -43,7 +43,7 @@ fun Project.PythonVersionsInfo(versions: VersionsInfo) {
             // 修改 Python 版本
             if (line.contains("# python-versions")) {
                 val curLine = StringJoiner(
-                        ", ", "        version: [", "] # python-versions"
+                        ", ", "        python: [", "] # python-versions"
                 ).also { joiner ->
                     for (ver in versions.versions.keys.map { it.replace(".", "") }) {
                         joiner.add(ver)
@@ -56,7 +56,7 @@ fun Project.PythonVersionsInfo(versions: VersionsInfo) {
             // 修改 Debian 版本
             if (line.contains("# debian-versions")) {
                 val curLine = StringJoiner(
-                        ", ", "        platform: [", "] # debian-versions"
+                        ", ", "        debian: [", "] # debian-versions"
                 ).also { joiner ->
                     for (ver in DebianVersion.values().map { it.toString().capitalized() }) {
                         joiner.add(ver)

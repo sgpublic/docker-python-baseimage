@@ -1,14 +1,23 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
-if [ -e "/setup" ]; then
-  . /setup-functions.sh
-	bash /setup
-elif [ -e "./setup" ]; then
-  . /setup-functions.sh
-	bash ./setup
-fi
+. /setup-functions.sh
+
+run_setup() {
+  local SETUP_D=$1
+  if [[ -d "$SETUP_D" ]]; then
+    for i in $SETUP_D/*.sh; do
+      if [ -r $i ]; then
+        . $i
+      fi
+    done
+    unset i
+  fi
+}
+
+cp -a /etc/app-setup.d/*.sh /etc/app-setup.builtin.d
+run_setup /etc/app-setup.builtin.d
 
 if [[ -z "$APP_CACHE_HOME" ]]; then
   export APP_CACHE_HOME=$XDG_CACHE_HOME/$AUTO_VENV_NAME
