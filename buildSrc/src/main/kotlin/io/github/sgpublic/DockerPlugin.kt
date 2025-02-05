@@ -71,6 +71,8 @@ class DockerPlugin: Plugin<Project> {
                         DockerBuildImage::class.java
                 ) {
                     group = "python"
+                    mustRunAfter(buildPoetry)
+
                     buildArgs.putAll(mapOf(
                             "PYTHON_VERSION" to pyFullVer,
                             "DEBIAN_VERSION" to "$debianVer",

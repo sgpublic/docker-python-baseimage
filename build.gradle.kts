@@ -33,13 +33,11 @@ tasks {
         }
 
         val poetryTask = getTasksByName("pushPoetry${pyVer}${debVer}Image", false)
-        if (poetryTask.any()) {
-            dependsOn(poetryTask.first())
-        }
+                .firstOrNull() ?: return@ciBuild
+        dependsOn(poetryTask)
         val playwrightTask = getTasksByName("pushPlaywright${pyVer}${debVer}Image", false)
-        if (playwrightTask.any()) {
-            dependsOn(playwrightTask.first())
-        }
+                .firstOrNull() ?: return@ciBuild
+        dependsOn(playwrightTask)
     }
 }
 
