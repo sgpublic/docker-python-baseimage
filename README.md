@@ -30,18 +30,18 @@
 镜像启动流程：
 
 + 容器内工作目录为 `/app`
-+ 以 `root:root` 身份执行初始化脚本 `setup.sh`，寻找优先级：`/setup.sh` -> `/app/setup.sh`，若未寻找到则跳过。
++ 以 `root:root` 身份执行初始化脚本 `setup`，寻找优先级：`/setup` -> `/app/setup`，若未寻找到则跳过。
 + 检查环境变量 `AUTO_VENV` 是否为 `1`，若为 `1` 且 `/app/poetry.lock` 不存在则自动创建 venv 到 `$APP_CACHE_HOME/venv` 并激活。
 + 检查环境变量 `AUTO_PIP_INSTALL` 是否为 `1`，若为 `1`：
   + 若 `/app/poetry.lock` 存在，则执行 `poetry install`。
   + 若 `$REQUIREMENTS_TXT` 存在且 `AUTO_VENV_NAME` 为 `1`，则执行 `pip intall -r $REQUIREMENTS_TXT`。
-+ 以 `$PUID:$PGID` 身份执行启动脚本 `start.sh`，寻找优先级：`/start.sh` -> `/app/start.sh`，若未寻找到则报错，无法启动镜像。
++ 以 `$PUID:$PGID` 身份执行启动脚本 `start`，寻找优先级：`/start` -> `/app/start`，若未寻找到则报错，无法启动镜像。
 
 ## 食用方法
 
 选择一个你喜欢的目录，例如 `~/nonebot-app` 作为工作目录。
 
-将 NoneBot 应用项目克隆至 `./app`，即 `~/nonebot-app/app`，创建一个启动脚本 `./start.sh`，例如：
+将 NoneBot 应用项目克隆至 `./app`，即 `~/nonebot-app/app`，创建一个启动脚本 `./start`，例如：
 
 ```shell
 #!/bin/bash
@@ -76,7 +76,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./.cache:/home/poetry-runner/.cache
       - ./app:/app
-      - ./start.sh:/start.sh
+      - ./start:/start
     restart: unless-stopped
     environment:
       TZ: Asia/Shanghai
