@@ -22,4 +22,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "poetry-docker"
+rootProject.name = "docker-python-baseimage"

@@ -4,9 +4,14 @@ import org.gradle.api.Project
 import org.gradle.internal.extensions.stdlib.capitalized
 import java.io.File
 import java.util.StringJoiner
+import io.github.sgpublic.tasks.CudaVersion
 
-data class VersionsInfo(
-    val versions: Map<String, Map<DebianVersion, String>>
+data class PyVersionsInfo(
+    val versions: Map<String, Map<DebianVersion, String>>,
+)
+
+data class CudaVersionsInfo(
+    val versions: Map<String, CudaVersion>,
 )
 
 enum class DebianVersion(val numVer: Int) {
@@ -16,17 +21,17 @@ enum class DebianVersion(val numVer: Int) {
     ;
 }
 
-fun Project.PythonVersionsInfo(): VersionsInfo {
+fun Project.PythonVersionsInfo(): PyVersionsInfo {
     return try {
         File(project.rootDir, "versions/python.json").reader().use {
-            Gson.fromJson(it, VersionsInfo::class.java)
+            Gson.fromJson(it, PyVersionsInfo::class.java)
         }
     } catch (e: Exception) {
-        return VersionsInfo(emptyMap())
+        return PyVersionsInfo(emptyMap())
     }
 }
 
-fun Project.PythonVersionsInfo(versions: VersionsInfo) {
+fun Project.PythonVersionsInfo(versions: PyVersionsInfo) {
     File(project.rootDir, "versions/python.json")
             .also {
                 if (!it.exists()) {
@@ -71,17 +76,17 @@ fun Project.PythonVersionsInfo(versions: VersionsInfo) {
     }
 }
 
-fun Project.CudaVersionsInfo(): VersionsInfo {
+fun Project.CudaVersionsInfo(): CudaVersionsInfo {
     return try {
         File(project.rootDir, "versions/cuda.json").reader().use {
-            Gson.fromJson(it, VersionsInfo::class.java)
+            Gson.fromJson(it, CudaVersionsInfo::class.java)
         }
     } catch (e: Exception) {
-        return VersionsInfo(emptyMap())
+        return CudaVersionsInfo(emptyMap())
     }
 }
 
-fun Project.CudaVersionsInfo(versions: VersionsInfo) {
+fun Project.CudaVersionsInfo(versions: CudaVersionsInfo) {
     File(project.rootDir, "versions/cuda.json")
             .also {
                 if (!it.exists()) {

@@ -24,8 +24,9 @@ fun Task.findEnv(name: String) = project.findEnv(name)
 
 val Task.CI_MODE: Boolean get() = findEnv("poetry.docker.ci.mode").getOrElse("0") == "1"
 
+@Deprecated("由于版本不再区分，因此需要删除此语句", ReplaceWith(""))
 fun AbstractDockerRemoteApiTask.upToDateWhenTagExist(namespace: String, repository: String, tag: String) {
-    outputs.upToDateWhen {
-        CI_MODE && project.dockerHubApi.tagExists(namespace, repository, tag)
-    }
+//    outputs.upToDateWhen {
+//        CI_MODE && project.dockerHubApi.tagExists(namespace, repository, tag)
+//    }
 }

@@ -1,59 +1,122 @@
 {
   "versions": {
     "11.1": {
-      "buster": "11.1.1"
+      "debian": {
+        "buster": "11.1.1"
+      },
+      "cudnn": {}
     },
     "11.2": {
-      "buster": "11.2.2"
+      "debian": {
+        "buster": "11.2.2"
+      },
+      "cudnn": {}
     },
     "11.3": {
-      "buster": "11.3.1"
+      "debian": {
+        "buster": "11.3.1"
+      },
+      "cudnn": {}
     },
     "11.4": {
-      "buster": "11.4.4"
+      "debian": {
+        "buster": "11.4.4"
+      },
+      "cudnn": {}
     },
     "11.5": {
-      "bullseye": "11.5.2"
+      "debian": {
+        "bullseye": "11.5.2"
+      },
+      "cudnn": {}
     },
     "11.6": {
-      "bullseye": "11.6.2"
+      "debian": {
+        "bullseye": "11.6.2"
+      },
+      "cudnn": {}
     },
     "11.7": {
-      "bullseye": "11.7.1"
+      "debian": {
+        "bullseye": "11.7.1"
+      },
+      "cudnn": {}
     },
     "11.8": {
-      "bullseye": "11.8.0"
+      "debian": {
+        "bullseye": "11.8.0"
+      },
+      "cudnn": {
+        "9": "9.1.1.17"
+      }
     },
     "12.0": {
-      "bullseye": "12.0.1",
-      "buster": "12.0.1"
+      "debian": {
+        "buster": "12.0.1",
+        "bullseye": "12.0.1"
+      },
+      "cudnn": {}
     },
     "12.1": {
-      "bullseye": "12.1.1",
-      "buster": "12.1.1"
+      "debian": {
+        "buster": "12.1.1",
+        "bullseye": "12.1.1"
+      },
+      "cudnn": {}
     },
     "12.2": {
-      "bullseye": "12.2.2",
-      "buster": "12.2.2"
+      "debian": {
+        "buster": "12.2.2",
+        "bullseye": "12.2.2"
+      },
+      "cudnn": {}
     },
     "12.3": {
-      "bookworm": "12.3.2",
-      "bullseye": "12.3.2",
-      "buster": "12.3.2"
+      "debian": {
+        "buster": "12.3.2",
+        "bullseye": "12.3.2",
+        "bookworm": "12.3.2"
+      },
+      "cudnn": {
+        "9": "9.0.0.312"
+      }
     },
     "12.4": {
-      "bookworm": "12.4.1",
-      "bullseye": "12.4.1",
-      "buster": "12.4.1"
+      "debian": {
+        "buster": "12.4.1",
+        "bullseye": "12.4.1",
+        "bookworm": "12.4.1"
+      },
+      "cudnn": {
+        "9": "9.1.1.17"
+      }
     },
     "12.5": {
-      "bookworm": "12.5.1",
-      "bullseye": "12.5.1",
-      "buster": "12.5.1"
+      "debian": {
+        "buster": "12.5.1",
+        "bullseye": "12.5.1",
+        "bookworm": "12.5.1"
+      },
+      "cudnn": {
+        "9": "9.2.1.18"
+      }
     },
     "12.6": {
-      "bookworm": "12.6.3",
-      "bullseye": "12.6.3"
+      "debian": {
+        "bullseye": "12.6.3",
+        "bookworm": "12.6.3"
+      },
+      "cudnn": {
+        "9": "9.6.0.74"
+      }
+    },
+    "12.8": {
+      "debian": {
+        "bookworm": "12.8.0"
+      },
+      "cudnn": {
+        "9": "9.7.1.26"
+      }
     }
   }
 }

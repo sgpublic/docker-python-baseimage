@@ -53,7 +53,7 @@ open class PythonVersions: DefaultTask() {
             checkedVersions[minorVer.toString()] = storedMinorVer
         }
 
-        project.PythonVersionsInfo(VersionsInfo(checkedVersions))
+        project.PythonVersionsInfo(PyVersionsInfo(checkedVersions))
     }
 
     override fun getGroup(): String {

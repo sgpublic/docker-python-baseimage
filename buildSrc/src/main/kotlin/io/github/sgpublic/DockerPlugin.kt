@@ -3,11 +3,7 @@ package io.github.sgpublic
 import com.bmuschko.gradle.docker.DockerRemoteApiPlugin
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
-import io.github.sgpublic.tasks.CudaDockerfile
-import io.github.sgpublic.tasks.PlaywrightDockerfile
-import io.github.sgpublic.tasks.PoetryDockerfile
-import io.github.sgpublic.tasks.PythonVersions
-import io.github.sgpublic.tasks.CodaVersions
+import io.github.sgpublic.tasks.*
 import io.github.sgpublic.utils.*
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -36,7 +32,7 @@ class DockerPlugin: Plugin<Project> {
                         "buildPoetry${simplyVersion}${debianVer.name.capitalized()}Image",
                         DockerBuildImage::class.java
                 ) {
-                    group = "python"
+                    group = "python${simplyVersion}"
                     inputDir.set(buildDir("poetry"))
                     buildArgs.putAll(mapOf(
                             "PYTHON_VERSION" to pyFullVer,
@@ -56,7 +52,7 @@ class DockerPlugin: Plugin<Project> {
                         "pushPoetry${simplyVersion}${debianVer.name.capitalized()}Image",
                         DockerPushImage::class.java
                 ) {
-                    group = "python"
+                    group = "python${simplyVersion}"
                     dependsOn(buildPoetry)
                     images.addAll(tagsPoetry)
                     upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, tagsPoetry.last())
@@ -70,7 +66,7 @@ class DockerPlugin: Plugin<Project> {
                         "buildPlaywright${simplyVersion}${debianVer.name.capitalized()}Image",
                         DockerBuildImage::class.java
                 ) {
-                    group = "python"
+                    group = "python${simplyVersion}"
                     mustRunAfter(buildPoetry)
 
                     buildArgs.putAll(mapOf(
@@ -92,7 +88,7 @@ class DockerPlugin: Plugin<Project> {
                         "pushPlaywright${simplyVersion}${debianVer.name.capitalized()}Image",
                         DockerPushImage::class.java
                 ) {
-                    group = "python"
+                    group = "python${simplyVersion}"
                     dependsOn(buildPlaywright)
                     images.addAll(tagsPlaywright)
                     upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, tagsPlaywright.last())
@@ -115,16 +111,20 @@ class DockerPlugin: Plugin<Project> {
         val dockerCreateCudaDockerfile = target.tasks.register("cudaDockerfile", CudaDockerfile::class.java) {
             destFile.set(buildFile("cuda/Dockerfile"))
         }
+        val dockerCreateCudnnDockerfile = target.tasks.register("cudnnDockerfile", CudnnDockerfile::class.java) {
+            destFile.set(buildFile("cudnn/Dockerfile"))
+        }
         target.tasks.register("cudaVersions", CodaVersions::class.java)
 
         for ((cudaMinorVer, cudaInfo) in target.CudaVersionsInfo().versions) {
             val simplyCudaMinorVer = cudaMinorVer.replace(".", "")
             val debCudaMinorVer = cudaMinorVer.replace(".", "-")
-            for ((debianVer, cudaFullVer) in cudaInfo) {
+            val cudaMajorVer = debCudaMinorVer.split("-")[0]
+            for ((debianVer, cudaFullVer) in cudaInfo.debian) {
                 for ((pyMinorVer, pyInfo) in target.PythonVersionsInfo().versions) {
                     val simplePyMinorVer = pyMinorVer.replace(".", "")
                     val pyFullVer = pyInfo[debianVer] ?: continue
-                    val tagsPoetry = listOf(
+                    val cudaPoetryTags = listOf(
                             "${DOCKER_TAG}:$pyMinorVer-$debianVer-cuda$cudaMinorVer",
                             "${DOCKER_TAG}:${pyFullVer}-$debianVer-cuda$cudaFullVer",
                     )
@@ -132,7 +132,7 @@ class DockerPlugin: Plugin<Project> {
                             "buildCuda${simplyCudaMinorVer}Poetry${simplePyMinorVer}${debianVer.name.capitalized()}Image",
                             DockerBuildImage::class.java
                     ) {
-                        group = "cuda"
+                        group = "cuda${simplyCudaMinorVer}"
                         inputDir.set(buildDir("cuda"))
                         buildArgs.putAll(mapOf(
                                 "PYTHON_VERSION" to pyFullVer,
@@ -142,19 +142,19 @@ class DockerPlugin: Plugin<Project> {
                                 "CUDA_VERSION" to cudaFullVer,
                                 "CUDA_MINOR_VERSION" to debCudaMinorVer,
                         ))
-                        images.addAll(tagsPoetry)
+                        images.addAll(cudaPoetryTags)
                         dependsOn(dockerCreateCudaDockerfile)
                         dockerFile.set(dockerCreateCudaDockerfile.get().destFile)
-                        upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, tagsPoetry.last())
+                        upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, cudaPoetryTags.last())
                     }
                     val pushCudaPoetry = target.tasks.register(
                             "pushCuda${simplyCudaMinorVer}Poetry${simplePyMinorVer}${debianVer.name.capitalized()}Image",
                             DockerPushImage::class.java
                     ) {
-                        group = "cuda"
+                        group = "cuda${simplyCudaMinorVer}"
                         dependsOn(buildCudaPoetry)
-                        images.addAll(tagsPoetry)
-                        upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, tagsPoetry.last())
+                        images.addAll(cudaPoetryTags)
+                        upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, cudaPoetryTags.last())
                     }
 
                     val tagsPlaywright = listOf(
@@ -165,7 +165,7 @@ class DockerPlugin: Plugin<Project> {
                             "buildCuda${simplyCudaMinorVer}Playwright${simplePyMinorVer}${debianVer.name.capitalized()}Image",
                             DockerBuildImage::class.java
                     ) {
-                        group = "cuda"
+                        group = "cuda${simplyCudaMinorVer}"
                         buildArgs.putAll(mapOf(
                                 "PYTHON_VERSION" to pyFullVer,
                                 "DEBIAN_VERSION" to "$debianVer",
@@ -184,7 +184,7 @@ class DockerPlugin: Plugin<Project> {
                             "pushCuda${simplyCudaMinorVer}Playwright${simplePyMinorVer}${debianVer.name.capitalized()}Image",
                             DockerPushImage::class.java
                     ) {
-                        group = "cuda"
+                        group = "cuda${simplyCudaMinorVer}"
                         dependsOn(buildCudaPlaywright)
                         images.addAll(tagsPlaywright)
                         upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, tagsPlaywright.last())
@@ -193,6 +193,83 @@ class DockerPlugin: Plugin<Project> {
                     if (target.DOCKER_TOKEN == null) {
                         pushCudaPoetry.get().enabled = false
                         pushCudaPlaywright.get().enabled = false
+                    }
+
+                    for ((cudnnMajorVer, cudnnFullVer) in cudaInfo.cudnn) {
+                        val cudnnPoetryTags = listOf(
+                                "${DOCKER_TAG}:$pyMinorVer-$debianVer-cuda$cudaMinorVer-cudnn$cudnnMajorVer",
+                                "${DOCKER_TAG}:${pyFullVer}-$debianVer-cuda$cudaFullVer-cudnn$cudnnMajorVer",
+                        )
+                        val buildCudnnPoetry = target.tasks.register(
+                                "buildCuda${simplyCudaMinorVer}Cudnn${cudnnMajorVer}Poetry${simplePyMinorVer}${debianVer.name.capitalized()}Image",
+                                DockerBuildImage::class.java
+                        ) {
+                            group = "cudnn${cudnnMajorVer}-${simplyCudaMinorVer}"
+                            inputDir.set(buildDir("cudnn"))
+                            buildArgs.putAll(mapOf(
+                                    "PYTHON_VERSION" to pyFullVer,
+                                    "DEBIAN_VERSION" to "$debianVer",
+                                    "CUDA_VERSION" to cudaFullVer,
+                                    "FLAVOR" to "",
+                                    "CUDNN_VERSION" to cudnnFullVer,
+                                    "CUDNN_MAJOR_VERSION" to cudnnMajorVer,
+                                    "CUDA_MAJOR_VERSION" to cudaMajorVer,
+                            ))
+                            images.addAll(cudnnPoetryTags)
+                            mustRunAfter(buildCudaPoetry)
+                            dependsOn(dockerCreateCudnnDockerfile)
+                            dockerFile.set(dockerCreateCudnnDockerfile.get().destFile)
+                            upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, cudnnPoetryTags.last())
+                        }
+                        val pushCudnnPoetry = target.tasks.register(
+                                "pushCuda${simplyCudaMinorVer}Cudnn${cudnnMajorVer}Poetry${simplePyMinorVer}${debianVer.name.capitalized()}Image",
+                                DockerPushImage::class.java
+                        ) {
+                            group = "cudnn${cudnnMajorVer}-${simplyCudaMinorVer}"
+                            dependsOn(buildCudnnPoetry)
+                            images.addAll(cudnnPoetryTags)
+                            upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, cudnnPoetryTags.last())
+                        }
+
+                        val cudnnPlaywrightTags = listOf(
+                                "${DOCKER_TAG}:${pyMinorVer}-${debianVer}-playwright-cuda$cudaMinorVer",
+                                "${DOCKER_TAG}:${pyFullVer}-${debianVer}-playwright-cuda$cudaFullVer",
+                        )
+                        val buildCudnnPlaywright = target.tasks.register(
+                                "buildCuda${simplyCudaMinorVer}Cudnn${cudnnMajorVer}Playwright${simplePyMinorVer}${debianVer.name.capitalized()}Image",
+                                DockerBuildImage::class.java
+                        ) {
+                            group = "cudnn${cudnnMajorVer}-${simplyCudaMinorVer}"
+                            buildArgs.putAll(mapOf(
+                                    "PYTHON_VERSION" to pyFullVer,
+                                    "DEBIAN_VERSION" to "$debianVer",
+                                    "CUDA_VERSION" to cudaFullVer,
+                                    "FLAVOR" to "-playwright",
+                                    "CUDNN_VERSION" to cudnnFullVer,
+                                    "CUDNN_MAJOR_VERSION" to cudnnMajorVer,
+                                    "CUDA_MAJOR_VERSION" to cudaMajorVer,
+                            ))
+                            inputDir.set(buildDir("cudnn"))
+                            images.addAll(cudnnPlaywrightTags)
+                            mustRunAfter(buildCudaPlaywright)
+                            dependsOn(dockerCreateCudnnDockerfile)
+                            dockerFile.set(dockerCreateCudnnDockerfile.get().destFile)
+                            upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, cudnnPoetryTags.last())
+                        }
+                        val pushCudnnPlaywright = target.tasks.register(
+                                "pushCuda${simplyCudaMinorVer}Cudnn${cudnnMajorVer}Playwright${simplePyMinorVer}${debianVer.name.capitalized()}Image",
+                                DockerPushImage::class.java
+                        ) {
+                            group = "cuda${simplyCudaMinorVer}"
+                            dependsOn(buildCudnnPlaywright)
+                            images.addAll(cudnnPoetryTags)
+                            upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, cudnnPoetryTags.last())
+                        }
+
+                        if (target.DOCKER_TOKEN == null) {
+                            pushCudnnPoetry.get().enabled = false
+                            pushCudnnPlaywright.get().enabled = false
+                        }
                     }
                 }
             }
