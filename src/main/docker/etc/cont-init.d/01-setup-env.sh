@@ -2,6 +2,10 @@
 
 set -e
 
+if [[ -z "$APP_CACHE_HOME" ]]; then
+  export APP_CACHE_HOME=$XDG_CACHE_HOME/$AUTO_VENV_NAME
+fi
+
 POETRY_LOCK=/app/poetry.lock
 
 mkdir -p $APP_CACHE_HOME
@@ -56,11 +60,3 @@ if [[ "$AUTO_PIP_INSTALL" == "1" ]]; then
 else
   echo "未启用自动 pip install"
 fi
-
-ENTRYPOINT=./start
-if [ -e "/start" ]; then
-  ENTRYPOINT=/start
-fi
-
-echo "启动脚本：$ENTRYPOINT"
-exec $ENTRYPOINT

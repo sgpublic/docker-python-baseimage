@@ -8,11 +8,12 @@ import org.gradle.api.tasks.TaskAction
 open class PlaywrightDockerfile : Dockerfile() {
     @TaskAction
     override fun create() {
-        this.arg("PYTHON_VERSION")
-        this.arg("DEBIAN_VERSION")
-        this.from(From("${DockerPlugin.DOCKER_TAG}:\${PYTHON_VERSION}-\${DEBIAN_VERSION}"))
-        this.arg("__BREAK_SYSTEM_PACKAGE")
-        this.runCommand(command(
+        arg("PYTHON_VERSION")
+        arg("DEBIAN_VERSION")
+        arg("BASE_FLAVOR")
+        from(From("${DockerPlugin.DOCKER_TAG}:\${PYTHON_VERSION}-\${DEBIAN_VERSION}\${BASE_FLAVOR}"))
+        arg("__BREAK_SYSTEM_PACKAGE")
+        runCommand(command(
                 pipInstall(
                         "playwright",
                         "\${__BREAK_SYSTEM_PACKAGE}"
@@ -25,6 +26,6 @@ open class PlaywrightDockerfile : Dockerfile() {
     }
 
     override fun getGroup(): String {
-        return "python"
+        return "dockerfile"
     }
 }

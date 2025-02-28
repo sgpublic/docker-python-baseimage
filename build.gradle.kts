@@ -1,4 +1,6 @@
-import io.github.sgpublic.utils.GitCreateTag
+import io.github.sgpublic.BaseFlavor
+import io.github.sgpublic.tasks.GitCreateTag
+import io.github.sgpublic.tasks.BaseImageVersion
 import io.github.sgpublic.gradle.VersionGen
 import io.github.sgpublic.utils.findEnv
 
@@ -10,13 +12,15 @@ plugins {
 }
 
 group = "io.github.sgpublic"
-val mVersion = "${VersionGen.COMMIT_COUNT_VERSION}"
+val mVersion = "2.0.0"
 version = mVersion
 
 tasks {
     val createGitTag by creating(GitCreateTag::class) {
         tagName = "v$mVersion"
     }
+
+    val baseImageVersion by creating(BaseImageVersion::class)
 
     val clean by creating(Delete::class) {
         delete(rootProject.file("build"))
@@ -26,16 +30,23 @@ tasks {
         group = "publishing"
         val pyVer = findEnv("ci.build.python.version").orNull
         val debVer = findEnv("ci.build.debian.version").orNull
+        val flavor = findEnv("ci.build.baseflavor").orNull?.uppercase()?.let {
+            return@let try {
+                BaseFlavor.valueOf(it)
+            } catch (e: Exception) {
+                null
+            }
+        }
 
-        if (pyVer == null || debVer == null) {
+        if (pyVer == null || debVer == null || flavor == null) {
             enabled = false
             return@ciBuild
         }
 
-        val poetryTask = getTasksByName("pushPoetry${pyVer}${debVer}Image", false)
+        val poetryTask = getTasksByName("push${flavor.taskSuffix}Poetry${pyVer}${debVer}Image", false)
                 .firstOrNull() ?: return@ciBuild
         dependsOn(poetryTask)
-        val playwrightTask = getTasksByName("pushPlaywright${pyVer}${debVer}Image", false)
+        val playwrightTask = getTasksByName("push${flavor.taskSuffix}Playwright${pyVer}${debVer}Image", false)
                 .firstOrNull() ?: return@ciBuild
         dependsOn(playwrightTask)
     }

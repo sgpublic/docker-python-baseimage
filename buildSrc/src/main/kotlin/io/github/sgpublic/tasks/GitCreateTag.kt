@@ -1,4 +1,4 @@
-package io.github.sgpublic.utils
+package io.github.sgpublic.tasks
 
 import org.eclipse.jgit.api.Git
 import org.gradle.api.DefaultTask

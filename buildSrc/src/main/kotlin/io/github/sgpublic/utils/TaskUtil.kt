@@ -6,6 +6,7 @@ import org.gradle.api.Task
 import org.gradle.api.file.Directory
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
+import java.io.File
 
 fun Task.buildFile(name: String): Provider<RegularFile> {
     return project.layout.buildDirectory.file(name)
@@ -13,6 +14,18 @@ fun Task.buildFile(name: String): Provider<RegularFile> {
 
 fun Task.buildDir(name: String): Provider<Directory> {
     return project.layout.buildDirectory.dir(name)
+}
+
+fun Task.srcMainDir(name: String): Provider<Directory> {
+    return project.provider {
+        project.rootProject.layout.projectDirectory.dir("./src/main/${name}")
+    }
+}
+
+fun Task.srcMainFile(name: String): Provider<RegularFile> {
+    return project.provider {
+        project.rootProject.layout.projectDirectory.file("./src/main/${name}")
+    }
 }
 
 fun Project.findEnv(name: String) = provider {

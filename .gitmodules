@@ -1,0 +1,6 @@
+[submodule "src/main/base/baseimage-gui"]
+	path = src/main/base/baseimage-gui
+	url = https://github.com/jlesage/docker-baseimage-gui.git
+[submodule "src/main/base/baseimage"]
+	path = src/main/base/baseimage
+	url = https://github.com/jlesage/docker-baseimage.git
