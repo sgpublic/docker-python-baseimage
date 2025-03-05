@@ -22,7 +22,7 @@ abstract class CudnnDockerfile: Dockerfile() {
         this.arg("DEBIAN_VERSION")
         this.arg("CUDA_VERSION")
         this.arg("FLAVOR")
-        this.from(From("${DockerPlugin.DOCKER_TAG}:\${PYTHON_VERSION}-\${DEBIAN_VERSION}\${FLAVOR}-cuda\${CUDA_VERSION}"))
+        this.from(From("${DockerPlugin.DOCKER_TAG}:\${PYTHON_VERSION}-\${DEBIAN_VERSION}\${FLAVOR}-cuda\${CUDA_VERSION}-${DockerPlugin.VERSION}"))
 
         this.arg("CUDNN_VERSION")
         this.environmentVariable("CUDNN_VERSION", "\${CUDNN_VERSION}")

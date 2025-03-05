@@ -10,10 +10,10 @@ dependencies {
         exclude("com.jcraft", "jsch")
     }
     implementation(libs.jgit.apache)
-    implementation(libs.bundles.docker.java)
-    implementation(libs.docker.api) {
-        exclude("com.github.docker-java")
-    }
+    // implementation(libs.bundles.docker.java)
+    implementation(libs.docker.api)// {
+//        exclude("com.github.docker-java")
+//    }
     implementation(libs.version.compare)
 }
 

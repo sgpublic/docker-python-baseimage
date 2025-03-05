@@ -22,7 +22,7 @@ abstract class CudaDockerfile: Dockerfile() {
         this.arg("PYTHON_VERSION")
         this.arg("DEBIAN_VERSION")
         this.arg("FLAVOR")
-        this.from(From("${DockerPlugin.DOCKER_TAG}:\${PYTHON_VERSION}-\${DEBIAN_VERSION}\${FLAVOR}"))
+        this.from(From("${DockerPlugin.DOCKER_TAG}:\${PYTHON_VERSION}-\${DEBIAN_VERSION}\${FLAVOR}-${DockerPlugin.VERSION}"))
 
         this.arg("DEBIAN_VERSION_INT")
         runCommand(command(

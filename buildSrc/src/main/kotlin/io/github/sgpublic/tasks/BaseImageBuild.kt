@@ -30,6 +30,16 @@ abstract class BaseImageBuild: DockerBuildImage() {
     abstract val pyVer: Property<String>
     @get:Input
     abstract val debVer: Property<DebianVersion>
+    @get:Input
+    abstract val baseImageVer: Property<String>
+    @get:Input
+    abstract val baseImageGuiVer: Property<String>
+    @get:Input
+    abstract val buildPlatform: Property<String>
+    @get:Input
+    abstract val targetPlatform: Property<String>
+    @get:Input
+    abstract val targetArch: Property<String>
 
     init {
         this.buildArgs.putAll(project.provider {
@@ -39,11 +49,16 @@ abstract class BaseImageBuild: DockerBuildImage() {
             mapOf(
                     "BASEIMAGE" to when (flavor) {
                         BaseFlavor.COMMON -> "python:$pyFullVer-slim-$debianVer"
-                        BaseFlavor.GUI -> "${DockerPlugin.DOCKER_TAG}:$pyFullVer-$debianVer-base${flavor.tagSuffix}"
+                        BaseFlavor.GUI -> "${DockerPlugin.DOCKER_TAG}:$pyFullVer-$debianVer-base-${DockerPlugin.VERSION}"
                     },
                     // to fix 'failed to parse platform : "" is an invalid component of ""'
-                    "BUILDPLATFORM" to platform.get(),
-                    "TARGETPLATFORM" to platform.get(),
+                    "BUILDPLATFORM" to buildPlatform.get(),
+                    "TARGETPLATFORM" to targetPlatform.get(),
+                    "TARGETARCH" to targetArch.get(),
+                    "IMAGE_VERSION" to when (flavor) {
+                        BaseFlavor.COMMON -> baseImageVer.get()
+                        BaseFlavor.GUI -> baseImageGuiVer.get()
+                    },
             )
         })
     }

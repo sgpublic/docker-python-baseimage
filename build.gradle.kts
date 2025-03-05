@@ -12,12 +12,12 @@ plugins {
 }
 
 group = "io.github.sgpublic"
-val mVersion = "2.0.0"
+val mVersion = findEnv("project.version")
 version = mVersion
 
 tasks {
     val createGitTag by creating(GitCreateTag::class) {
-        tagName = "v$mVersion"
+        tagName = provider { "v${mVersion.get()}" }
     }
 
     val baseImageVersion by creating(BaseImageVersion::class)

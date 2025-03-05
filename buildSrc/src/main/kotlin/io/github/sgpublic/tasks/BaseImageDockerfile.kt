@@ -47,7 +47,7 @@ abstract class BaseImageDockerfile: DefaultTask() {
         if (!output.parentFile.exists()) {
             project.mkdir(output.parentFile)
         }
-        input.walk().forEach { source ->
+        for (source in input.walk()) {
             val dest = File(output, source.relativeTo(input).path)
             Files.copy(
                     Paths.get(source.toURI()),
@@ -57,28 +57,68 @@ abstract class BaseImageDockerfile: DefaultTask() {
             )
         }
 
+        postProcessDockerfile()
+
+        when (baseFlavor.get()) {
+            BaseFlavor.COMMON -> postProcessCommon()
+            BaseFlavor.GUI -> postProcessGui()
+        }
+    }
+
+    private fun postProcessDockerfile() {
         val dockerFile = destFile.get().asFile
-        var hasBuildPlatform = false
-        var hasTargetPlatform = false
         val content = LinkedList(dockerFile.reader().readLines())
+        var hasBuildPlatform = false
         for (line in content) {
             if (line == "ARG BUILDPLATFORM") {
                 hasBuildPlatform = true
             }
-            if (line == "ARG TARGETPLATFORM") {
-                hasTargetPlatform = true
-            }
         }
         if (!hasBuildPlatform) {
             content.addFirst("ARG BUILDPLATFORM")
-        }
-        if (!hasTargetPlatform) {
-            content.addFirst("ARG TARGETPLATFORM")
         }
         dockerFile.writer().use { writer ->
             for (line in content) {
                 writer.appendLine(line)
             }
         }
+    }
+
+    private fun postProcessCommon() {
+
+    }
+
+    private fun postProcessGui() {
+        val buildShs = File(getOutput().get().asFile, "./src")
+                .walk()
+                .filter { it.isFile && it.name == "build.sh" }
+        for (buildSh in buildShs) {
+            val content = LinkedList(buildSh.readLines())
+            buildSh.writer().use { writer ->
+                for (line in content) {
+                    if (line.startsWith("curl") && !line.contains("-k")) {
+                        // to fix 'OpenSSL SSL_read: SSL_ERROR_SYSCALL, errno 0'
+                        writer.appendLine(line.replace(
+                                "curl -# -L -f",
+                                "wget " +
+                                        "--continue " +
+                                        "--tries=3 " +
+                                        "--waitretry=5 " +
+                                        "-O -"
+                        ))
+                    } else if (line == "    curl \\") {
+                        // install wget
+                        writer.appendLine(line)
+                        writer.appendLine("    wget \\")
+                    } else {
+                        writer.appendLine(line)
+                    }
+                }
+            }
+        }
+    }
+
+    override fun getGroup(): String {
+        return "dockerfile"
     }
 }

@@ -7,8 +7,8 @@ import io.github.sgpublic.tasks.*
 import io.github.sgpublic.utils.*
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.provider.Provider
 import org.gradle.internal.extensions.stdlib.capitalized
-import org.jetbrains.kotlin.gradle.utils.provider
 import java.io.File
 
 enum class BaseFlavor(
@@ -22,7 +22,13 @@ enum class BaseFlavor(
 
 class DockerPlugin: Plugin<Project> {
     override fun apply(project: Project) {
+        version = project.findEnv("project.version")
+        
         project.pluginManager.apply(DockerRemoteApiPlugin::class.java)
+
+        val baseImageInfo = File(project.rootDir, "versions/baseimage.json").reader().use {
+            Gson.fromJson(it, BaseImageVersionInfo::class.java)
+        }
 
         val dockerCreatePoetryDockerfile = project.tasks.create("poetryDockerfile", PoetryDockerfile::class.java) {
             destFile.set(buildFile("poetry/Dockerfile"))
@@ -32,9 +38,6 @@ class DockerPlugin: Plugin<Project> {
         }
         project.tasks.create("pythonVersions", PythonVersions::class.java)
 
-        val baseImageInfo = File(project.rootDir, "versions/baseimage.json").reader().use {
-            Gson.fromJson(it, BaseImageVersionInfo::class.java)
-        }
 
         for (flavor in BaseFlavor.values()) {
             val dockerCreateBaseDockerfile = project.tasks.create("base${flavor.taskSuffix}Dockerfile", BaseImageDockerfile::class.java) {
@@ -45,7 +48,8 @@ class DockerPlugin: Plugin<Project> {
                 for ((debianVer, pyFullVer) in info) {
                     val tagsBase = listOf(
                             "${DOCKER_TAG}:${pyMinorVer}-${debianVer}-base${flavor.tagSuffix}",
-                            "${DOCKER_TAG}:${pyFullVer}-${debianVer}-base${flavor.tagSuffix}-${baseImageInfo.baseImage}",
+                            "${DOCKER_TAG}:${pyFullVer}-${debianVer}-base${flavor.tagSuffix}",
+                            "${DOCKER_TAG}:${pyFullVer}-${debianVer}-base${flavor.tagSuffix}-$VERSION",
                     )
                     val buildBase = project.tasks.create(
                             "build${flavor.taskSuffix}${simplyVersion}${debianVer.name.capitalized()}Image",
@@ -57,7 +61,11 @@ class DockerPlugin: Plugin<Project> {
                         baseFlavor.set(flavor)
                         debVer.set(debianVer)
                         images.addAll(tagsBase)
-                        platform.set("linux/amd64")
+                        baseImageVer.set(baseImageInfo.baseImage)
+                        baseImageGuiVer.set(baseImageInfo.baseImageGui)
+                        buildPlatform.set("linux/amd64")
+                        targetPlatform.set("linux/amd64")
+                        targetArch.set("x86_64")
                         dependsOn(dockerCreateBaseDockerfile)
                         dockerFile.set(dockerCreateBaseDockerfile.destFile)
                         upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, tagsBase.last())
@@ -65,6 +73,7 @@ class DockerPlugin: Plugin<Project> {
 
                     val tagsPoetry = listOf(
                             "${DOCKER_TAG}:${pyMinorVer}-${debianVer}${flavor.tagSuffix}",
+                            "${DOCKER_TAG}:${pyFullVer}-${debianVer}${flavor.tagSuffix}-$VERSION",
                             "${DOCKER_TAG}:${pyFullVer}-${debianVer}${flavor.tagSuffix}",
                     )
                     val buildPoetry = project.tasks.create(
@@ -102,6 +111,7 @@ class DockerPlugin: Plugin<Project> {
                     val tagsPlaywright = listOf(
                             "${DOCKER_TAG}:${pyMinorVer}-${debianVer}-playwright",
                             "${DOCKER_TAG}:${pyFullVer}-${debianVer}-playwright",
+                            "${DOCKER_TAG}:${pyFullVer}-${debianVer}-playwright-$VERSION",
                     )
                     val buildPlaywright = project.tasks.create(
                             "build${flavor.taskSuffix}Playwright${simplyVersion}${debianVer.name.capitalized()}Image",
@@ -173,6 +183,7 @@ class DockerPlugin: Plugin<Project> {
                         val cudaPoetryTags = listOf(
                                 "${DOCKER_TAG}:$pyMinorVer-$debianVer${flavor.tagSuffix}-cuda$cudaMinorVer",
                                 "${DOCKER_TAG}:${pyFullVer}-$debianVer${flavor.tagSuffix}-cuda$cudaFullVer",
+                                "${DOCKER_TAG}:${pyFullVer}-$debianVer${flavor.tagSuffix}-cuda$cudaFullVer-$VERSION",
                         )
                         val buildCudaPoetry = project.tasks.create(
                                 "build${flavor.taskSuffix}Cuda${simplyCudaMinorVer}Poetry${simplePyMinorVer}${debianVer.name.capitalized()}Image",
@@ -183,7 +194,7 @@ class DockerPlugin: Plugin<Project> {
                             buildArgs.putAll(mapOf(
                                     "PYTHON_VERSION" to pyFullVer,
                                     "DEBIAN_VERSION" to "$debianVer",
-                                    "FLAVOR" to "",
+                                    "FLAVOR" to flavor.tagSuffix,
                                     "DEBIAN_VERSION_INT" to "${debianVer.numVer}",
                                     "CUDA_VERSION" to cudaFullVer,
                                     "CUDA_MINOR_VERSION" to debCudaMinorVer,
@@ -206,6 +217,7 @@ class DockerPlugin: Plugin<Project> {
                         val tagsPlaywright = listOf(
                                 "${DOCKER_TAG}:${pyMinorVer}-${debianVer}${flavor.tagSuffix}-playwright-cuda$cudaMinorVer",
                                 "${DOCKER_TAG}:${pyFullVer}-${debianVer}${flavor.tagSuffix}-playwright-cuda$cudaFullVer",
+                                "${DOCKER_TAG}:${pyFullVer}-${debianVer}${flavor.tagSuffix}-playwright-cuda$cudaFullVer-$VERSION",
                         )
                         val buildCudaPlaywright = project.tasks.create(
                                 "build${flavor.taskSuffix}Cuda${simplyCudaMinorVer}Playwright${simplePyMinorVer}${debianVer.name.capitalized()}Image",
@@ -215,7 +227,7 @@ class DockerPlugin: Plugin<Project> {
                             buildArgs.putAll(mapOf(
                                     "PYTHON_VERSION" to pyFullVer,
                                     "DEBIAN_VERSION" to "$debianVer",
-                                    "FLAVOR" to "-playwright",
+                                    "FLAVOR" to "-playwright${flavor.tagSuffix}",
                                     "DEBIAN_VERSION_INT" to "${debianVer.numVer}",
                                     "CUDA_VERSION" to cudaFullVer,
                                     "CUDA_MINOR_VERSION" to debCudaMinorVer,
@@ -245,6 +257,7 @@ class DockerPlugin: Plugin<Project> {
                             val cudnnPoetryTags = listOf(
                                     "${DOCKER_TAG}:$pyMinorVer-$debianVer${flavor.tagSuffix}-cuda$cudaMinorVer-cudnn$cudnnMajorVer",
                                     "${DOCKER_TAG}:${pyFullVer}-$debianVer${flavor.tagSuffix}-cuda$cudaFullVer-cudnn$cudnnMajorVer",
+                                    "${DOCKER_TAG}:${pyFullVer}-$debianVer${flavor.tagSuffix}-cuda$cudaFullVer-cudnn$cudnnMajorVer-$VERSION",
                             )
                             val buildCudnnPoetry = project.tasks.create(
                                     "build${flavor.taskSuffix}Cuda${simplyCudaMinorVer}Cudnn${cudnnMajorVer}Poetry${simplePyMinorVer}${debianVer.name.capitalized()}Image",
@@ -256,7 +269,7 @@ class DockerPlugin: Plugin<Project> {
                                         "PYTHON_VERSION" to pyFullVer,
                                         "DEBIAN_VERSION" to "$debianVer",
                                         "CUDA_VERSION" to cudaFullVer,
-                                        "FLAVOR" to "",
+                                        "FLAVOR" to flavor.tagSuffix,
                                         "CUDNN_VERSION" to cudnnFullVer,
                                         "CUDNN_MAJOR_VERSION" to cudnnMajorVer,
                                         "CUDA_MAJOR_VERSION" to cudaMajorVer,
@@ -290,7 +303,7 @@ class DockerPlugin: Plugin<Project> {
                                         "PYTHON_VERSION" to pyFullVer,
                                         "DEBIAN_VERSION" to "$debianVer",
                                         "CUDA_VERSION" to cudaFullVer,
-                                        "FLAVOR" to "-playwright",
+                                        "FLAVOR" to "-playwright${flavor.tagSuffix}",
                                         "CUDNN_VERSION" to cudnnFullVer,
                                         "CUDNN_MAJOR_VERSION" to cudnnMajorVer,
                                         "CUDA_MAJOR_VERSION" to cudaMajorVer,
@@ -327,5 +340,7 @@ class DockerPlugin: Plugin<Project> {
         const val DOCKER_NAMESPACE = "mhmzx"
         const val DOCKER_REPOSITORY = "docker-python-baseimage"
         const val DOCKER_TAG = "$DOCKER_NAMESPACE/$DOCKER_REPOSITORY"
+        private var version: Provider<String>? = null
+        val VERSION: String get() = version?.get()!!
     }
 }

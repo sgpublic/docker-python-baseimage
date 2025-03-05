@@ -29,7 +29,7 @@ abstract class PoetryDockerfile: Dockerfile() {
         arg("PYTHON_VERSION")
         arg("DEBIAN_VERSION")
         arg("BASE_FLAVOR")
-        from(From("${DockerPlugin.DOCKER_TAG}:base\${BASE_FLAVOR}\${PYTHON_VERSION}-\${DEBIAN_VERSION}"))
+        from(From("${DockerPlugin.DOCKER_TAG}:\${PYTHON_VERSION}-\${DEBIAN_VERSION}-base\${BASE_FLAVOR}-${DockerPlugin.VERSION}"))
         arg("__SOURCE_LIST_FILE")
         runCommand(command(
                 replaceSourceListCommand(),
