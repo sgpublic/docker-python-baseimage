@@ -1,6 +1,7 @@
 [versions]
 kotlin = "2.0.10"
 docker = "9.4.0"
+docker-java = "3.4.1"
 release-github = "2.5.2"
 buildsrc-utils = "1.0.0-alpha02"
 
@@ -20,6 +21,9 @@ jgit-apache = { group = "org.eclipse.jgit", name = "org.eclipse.jgit.ssh.apache"
 docker-api = { group = "com.bmuschko.docker-remote-api", name = "com.bmuschko.docker-remote-api.gradle.plugin", version.ref = "docker" }
 version-compare = { group = "io.github.g00fy2", name = "versioncompare", version.ref = "version-compare" }
 
+docker-java-core = { module = "com.github.docker-java:docker-java-core", version.ref = "docker-java" }
+docker-java-api = { module = "com.github.docker-java:docker-java-api", version.ref = "docker-java" }
+docker-java-transport-httpclient5 = { module = "com.github.docker-java:docker-java-transport-httpclient5", version.ref = "docker-java" }
 
 [plugins]
 docker-api = { id = "com.bmuschko.docker-remote-api", version.ref = "docker" }
@@ -28,3 +32,4 @@ buildsrc-utils = { id = "io.github.sgpublic.buildsrc-utils", version.ref = "buil
 
 
 [bundles]
+docker-java = ["docker-java-core", "docker-java-api", "docker-java-transport-httpclient5"]

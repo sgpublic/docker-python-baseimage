@@ -11,8 +11,14 @@ import java.io.File
 fun Task.buildFile(name: String): Provider<RegularFile> {
     return project.layout.buildDirectory.file(name)
 }
+fun Task.buildFile(name: Provider<String>): Provider<RegularFile> {
+    return project.layout.buildDirectory.file(name)
+}
 
 fun Task.buildDir(name: String): Provider<Directory> {
+    return project.layout.buildDirectory.dir(name)
+}
+fun Task.buildDir(name: Provider<String>): Provider<Directory> {
     return project.layout.buildDirectory.dir(name)
 }
 
@@ -21,10 +27,20 @@ fun Task.srcMainDir(name: String): Provider<Directory> {
         project.rootProject.layout.projectDirectory.dir("./src/main/${name}")
     }
 }
+fun Task.srcMainDir(name: Provider<String>): Provider<Directory> {
+    return project.provider {
+        project.rootProject.layout.projectDirectory.dir("./src/main/${name.get()}")
+    }
+}
 
 fun Task.srcMainFile(name: String): Provider<RegularFile> {
     return project.provider {
         project.rootProject.layout.projectDirectory.file("./src/main/${name}")
+    }
+}
+fun Task.srcMainFile(name: Provider<String>): Provider<RegularFile> {
+    return project.provider {
+        project.rootProject.layout.projectDirectory.file("./src/main/${name.get()}")
     }
 }
 
