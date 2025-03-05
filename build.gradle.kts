@@ -30,7 +30,7 @@ tasks {
         group = "publishing"
         val pyVer = findEnv("ci.build.python.version").orNull
         val debVer = findEnv("ci.build.debian.version").orNull
-        val flavor = findEnv("ci.build.baseflavor").orNull?.uppercase()?.let {
+        val flavor = findEnv("ci.build.base.flavor").orNull?.uppercase()?.let {
             return@let try {
                 BaseFlavor.valueOf(it)
             } catch (e: Exception) {
