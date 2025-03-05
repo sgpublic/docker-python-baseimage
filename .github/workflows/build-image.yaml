@@ -12,7 +12,6 @@ jobs:
       matrix:
         python: [313, 312, 311, 310] # python-versions
         debian: [Buster, Bullseye, Bookworm] # debian-versions
-        base_flavor: [COMMON, GUI]
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.7
@@ -32,7 +31,6 @@ jobs:
         env:
           CI_BUILD_PYTHON_VERSION: ${{ matrix.python }}
           CI_BUILD_DEBIAN_VERSION: ${{ matrix.debian }}
-          CI_BUILD_BASE_FLAVOR: ${{ matrix.base_flavor }}
           PUBLISHING_DOCKER_USERNAME: ${{ secrets.PUBLISHING_DOCKER_USERNAME }}
           PUBLISHING_DOCKER_PASSWORD: ${{ secrets.PUBLISHING_DOCKER_PASSWORD }}
           PUBLISHING_DOCKER_TOKEN: ${{ secrets.PUBLISHING_DOCKER_TOKEN }}

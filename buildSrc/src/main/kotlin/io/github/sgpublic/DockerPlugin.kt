@@ -68,6 +68,21 @@ class DockerPlugin: Plugin<Project> {
                         targetArch.set("x86_64")
                         dependsOn(dockerCreateBaseDockerfile)
                         dockerFile.set(dockerCreateBaseDockerfile.destFile)
+                        if (flavor == BaseFlavor.GUI) {
+                            // baseimage-gui base on baseimage
+                            val baseTask = project.tasks.getByPath("build${BaseFlavor.COMMON.taskSuffix}${simplyVersion}${debianVer.name.capitalized()}Image")
+                            mustRunAfter(baseTask)
+                            dependsOn(baseTask)
+                        }
+                        upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, tagsBase.last())
+                    }
+                    val pushBase = project.tasks.create(
+                            "push${flavor.taskSuffix}${simplyVersion}${debianVer.name.capitalized()}Image",
+                            DockerPushImage::class.java
+                    ) {
+                        group = "python${simplyVersion}"
+                        dependsOn(buildBase)
+                        images.addAll(tagsBase)
                         upToDateWhenTagExist(DOCKER_NAMESPACE, DOCKER_REPOSITORY, tagsBase.last())
                     }
 
@@ -156,6 +171,7 @@ class DockerPlugin: Plugin<Project> {
                         // 未设置 Token 时不允许 push
                         pushPoetry.enabled = false
                         pushPlaywright.enabled = false
+                        pushBase.enabled = false
                     }
                 }
             }

@@ -30,25 +30,20 @@ tasks {
         group = "publishing"
         val pyVer = findEnv("ci.build.python.version").orNull
         val debVer = findEnv("ci.build.debian.version").orNull
-        val flavor = findEnv("ci.build.base.flavor").orNull?.uppercase()?.let {
-            return@let try {
-                BaseFlavor.valueOf(it)
-            } catch (e: Exception) {
-                null
-            }
-        }
 
-        if (pyVer == null || debVer == null || flavor == null) {
+        if (pyVer == null || debVer == null) {
             enabled = false
             return@ciBuild
         }
 
-        val poetryTask = getTasksByName("push${flavor.taskSuffix}Poetry${pyVer}${debVer}Image", false)
-                .firstOrNull() ?: return@ciBuild
-        dependsOn(poetryTask)
-        val playwrightTask = getTasksByName("push${flavor.taskSuffix}Playwright${pyVer}${debVer}Image", false)
-                .firstOrNull() ?: return@ciBuild
-        dependsOn(playwrightTask)
+        getTasksByName("push${BaseFlavor.COMMON.taskSuffix}${pyVer}${debVer}Image", false)
+                .firstOrNull()?.let { dependsOn(it) }
+        getTasksByName("push${BaseFlavor.GUI.taskSuffix}${pyVer}${debVer}Image", false)
+                .firstOrNull()?.let { dependsOn(it) }
+        getTasksByName("push${BaseFlavor.COMMON.taskSuffix}Poetry${pyVer}${debVer}Image", false)
+                .firstOrNull()?.let { dependsOn(it) }
+        getTasksByName("push${BaseFlavor.COMMON.taskSuffix}Playwright${pyVer}${debVer}Image", false)
+                .firstOrNull()?.let { dependsOn(it) }
     }
 }
 
@@ -63,7 +58,7 @@ githubRelease {
     token(findEnv("publishing.github.token"))
     owner = "sgpublic"
     repo = "docker-python-baseimage"
-    tagName = mVersion
-    releaseName = "v${mVersion}"
+    tagName = provider { "v${mVersion.get()}" }
+    releaseName = provider { "v${mVersion.get()}" }
     overwrite = true
 }
