@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python: [313, 312, 311, 310, 39] # python-versions
-        debian: [Bookworm, Bullseye, Buster] # debian-versions
-        base_flavor: ['', 'Gui']
+        python: [313, 312, 311, 310] # python-versions
+        debian: [Buster, Bullseye, Bookworm] # debian-versions
+        base_flavor: [COMMON, GUI]
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.7

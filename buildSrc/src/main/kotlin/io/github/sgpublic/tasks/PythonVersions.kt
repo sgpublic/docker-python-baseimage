@@ -32,7 +32,7 @@ open class PythonVersions: DefaultTask() {
             }
             val curVer = Version(version.getAsJsonPrimitive("version").asString)
             if (curVer < MIN_VER) {
-                // 放弃支持 3.8.x 及以下
+                // 放弃支持 3.9.x 及以下
                 continue
             }
             // 仅存储每个次要版本的最新版本
@@ -62,6 +62,6 @@ open class PythonVersions: DefaultTask() {
 
     companion object {
         const val VERSIONS_RSS = "https://raw.githubusercontent.com/actions/python-versions/refs/heads/main/versions-manifest.json"
-        private val MIN_VER = Version("3.9")
+        private val MIN_VER = Version("3.10")
     }
 }
