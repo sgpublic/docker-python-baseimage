@@ -64,6 +64,6 @@ abstract class BaseImageVersion: DefaultTask() {
     }
 
     override fun getGroup(): String {
-        return "baseimage"
+        return "versions"
     }
 }

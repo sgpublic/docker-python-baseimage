@@ -38,6 +38,6 @@ abstract class CudnnDockerfile: Dockerfile() {
     }
 
     override fun getGroup(): String {
-        return "cudnn"
+        return "dockerfile"
     }
 }

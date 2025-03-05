@@ -77,6 +77,6 @@ open class CodaVersions: DefaultTask() {
     }
 
     override fun getGroup(): String {
-        return "cuda"
+        return "versions"
     }
 }

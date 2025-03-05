@@ -49,6 +49,6 @@ abstract class CudaDockerfile: Dockerfile() {
     }
 
     override fun getGroup(): String {
-        return "cuda"
+        return "dockerfile"
     }
 }

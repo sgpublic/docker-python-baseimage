@@ -57,7 +57,7 @@ open class PythonVersions: DefaultTask() {
     }
 
     override fun getGroup(): String {
-        return "python"
+        return "versions"
     }
 
     companion object {
